@@ -1,5 +1,5 @@
-import {STAT_KEYS} from './config.js?v=060';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=060';
+import {STAT_KEYS} from './config.js?v=063';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=063';
 
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const clone=x=>JSON.parse(JSON.stringify(x));
@@ -48,7 +48,7 @@ export function createInitialState(runId=1){
     hazards:{dynamic:{}},audit:[],
     world:{
       weather:{label:'Хмарно',icon:'☁️',tempC:16,wind:1,rain:0},
-      location:'біля сільської хитини',environment:'outdoors'
+      location:'біля сільської хатини',environment:'outdoors'
     }
   };
 }
@@ -158,7 +158,7 @@ export function statModifiers(state){
 }
 
 export function effectiveStat(state,key){
-  const base=Number(state.stats?.[key]?.level||0);
+  const base=Number(state.stats?.[key]?.progress||0);
   const mod=Number(statModifiers(state)[key]||0);
   return clamp(base+mod,0,10);
 }

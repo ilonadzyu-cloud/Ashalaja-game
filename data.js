@@ -1,6 +1,6 @@
 export const STATUS_DEFS={
   hangover:{
-    name:'ЖОСТКИЙ БУДУНЯРА',
+    name:'ЖОСТКИЙ БУДУНЯРА',portrait:'./portrait_base.png',
     blurb:'Бувало і краще.',
     mods:{attention:-2,agility:-1,pofigism:2},
     drainMultipliers:{water:1.25},
@@ -8,14 +8,14 @@ export const STATUS_DEFS={
     remove:'поїсти, попити й трохи прийти до тями.'
   },
   pigeonHumiliated:{
-    name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',
+    name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',portrait:'./portrait_angry.png',
     blurb:'Ну буває.',
     mods:{charisma:-1,pofigism:1},
     remove:'помитись або змінити обісрану одежину.'
   },
-  dryMouth:{name:'СУШНЯК',blurb:'Сушить.',mods:{attention:-1},remove:'попити.'},
+  dryMouth:{name:'СУШНЯК',portrait:'./portrait_worry.png',blurb:'Сушить.',mods:{attention:-1},remove:'попити.'},
   yebatorium:{
-    name:'ОСТАНОВОЧКА ЄБАТОРІУМ',
+    name:'ОСТАНОВОЧКА ЄБАТОРІУМ',portrait:'./portrait_ahui.png',
     blurb:'Після такого ви вже готові перевіряти будь-яку хуйню.',
     mods:{attention:1,pofigism:1,ahui:1},
     remove:'сам пройде через 30 ігрових хвилин.',
@@ -23,7 +23,7 @@ export const STATUS_DEFS={
     persistentUnlock:'yebatorium'
   },
   scared:{
-    name:'ОБСЕРУНЬКАВСЯ ВІД СТРАХУ',
+    name:'ОБСЕРУНЬКАВСЯ ВІД СТРАХУ',portrait:'./portrait_worry.png',
     blurb:'Страшно капець.',
     mods:{attention:2,agility:1,pofigism:-2,charisma:-1},
     durationMinutes:20,
@@ -60,18 +60,18 @@ export const CLOTHES={
 
 export const ITEM_DEFS={
   water:{
-    name:'Вода',icon:'💧',category:'Їжа',stack:5,
+    name:'Вода',icon:'💧',category:'Їжа та напої',stack:5,
     description:'Можна випити.',
     useEffects:[{type:'need',key:'water',value:30}]
   },
   salo:{
-    name:'Сало',icon:'🥓',category:'Їжа',stack:5,
+    name:'Сало',icon:'🥓',category:'Їжа та напої',stack:5,
     description:'Можна зʼїсти.',
     useEffects:[{type:'need',key:'satiety',value:25}]
   },
-  vodka:{name:'Водка',icon:'🍾',category:'Їжа',stack:2,description:'Пахне так, що вже страшно.',useEffects:[{type:'statusAdd',id:'tipsy'}]},
-  aspirin:{name:'Аспірин',icon:'💊',category:'Медицина',stack:5,description:'Може трохи помогти від голови.'},
-  medkit:{name:'Аптечка',icon:'🩹',category:'Медицина',stack:2,description:'На випадок, якщо вже нормально так припече.',useEffects:[{type:'health',value:25}]},
+  vodka:{name:'Горілка',icon:'🍾',category:'Їжа та напої',stack:2,description:'Пахне так, що вже страшно.',useEffects:[{type:'statusAdd',id:'tipsy'}]},
+  aspirin:{name:'Аспірин',icon:'💊',category:'Ліки',stack:5,description:'Може трохи помогти від голови.'},
+  medkit:{name:'Аптечка',icon:'🩹',category:'Ліки',stack:2,description:'На випадок, якщо вже нормально так припече.',useEffects:[{type:'health',value:25}]},
   knife:{name:'Ніж',icon:'🔪',category:'Зброя',stack:1,description:'Інструмент. І зброя. Залежить, шо ви надумали.'},
   garlic:{name:'Часник',icon:'🧄',category:'Якась хуйня',stack:5,description:'Часник.'},
   onion:{name:'Цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Звичайна цибуля. Пока що.'},

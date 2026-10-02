@@ -1,15 +1,15 @@
-import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS} from './config.js?v=060';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=060';
+import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS} from './config.js?v=063';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=063';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction
-} from './engine.js?v=060';
+} from './engine.js?v=063';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
 } from './storage.js?v=054';
 import {audioManager} from './audio.js?v=059';
-import {getChapter1Scene,resolveSceneValue,CHAPTER1_START} from './chapter1.js?v=060';
+import {getChapter1Scene,resolveSceneValue,CHAPTER1_START} from './chapter1.js?v=063';
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -17,8 +17,13 @@ const paras=t=>String(t||'').split('\n\n').map(p=>`<p>${esc(p).replace(/\n/g,'<b
 
 let G=null;
 let currentTab='inventory';
+let inventoryCategory='all';
 let pendingQuickItem=null;
 let toastTimer=null;
+let noticeQueue=[];
+let noticeBusy=false;
+let stateModalQueue=[];
+let stateModalBusy=false;
 let sfxTimers=[];
 let persistChain=Promise.resolve();
 
@@ -51,6 +56,11 @@ async function beginFromHowTo(){
   await persist();
   $('#howToScreen').classList.add('hidden');
   showGame();
+  if(!G.flags.initialStatusPopupShown){
+    G.flags.initialStatusPopupShown=true;
+    await persist();
+    queueStateModal('hangover');
+  }
 }
 
 function renderHowTo(root=$('#menuContent'),{embedded=false}={}){
@@ -58,12 +68,67 @@ function renderHowTo(root=$('#menuContent'),{embedded=false}={}){
   root.innerHTML=`${heading}${howToCards()}`;
 }
 
-function toast(title,body=''){
+function showNextNotice(){
+  if(noticeBusy||!noticeQueue.length)return;
+  noticeBusy=true;
+  const {title,body}=noticeQueue.shift();
   const el=$('#toast');
-  el.innerHTML=`<b>${esc(title)}</b>${esc(body)}`;
+  el.innerHTML=`<b>${esc(title)}</b>${body?`<span>${esc(body)}</span>`:''}`;
   el.classList.remove('hidden');
+  requestAnimationFrame(()=>el.classList.add('show'));
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.classList.add('hidden'),2200);
+  toastTimer=setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=>{
+      el.classList.add('hidden');
+      noticeBusy=false;
+      showNextNotice();
+    },180);
+  },2400);
+}
+
+function toast(title,body=''){
+  noticeQueue.push({title,body});
+  showNextNotice();
+}
+
+function renderStatePopup(id){
+  const d=STATUS_DEFS[id];if(!d)return;
+  const effects=statusEffectText(id);
+  $('#statePopup').innerHTML=`<div class="state-popup-card"><img src="${d.portrait||'./hero-face.png'}" alt=""><div class="state-popup-copy"><h3>${esc(d.name)}</h3><div class="state-popup-blurb">${esc(d.blurb||'')}</div>${effects?`<div class="state-popup-effect">${esc(effects)}</div>`:''}<div class="state-popup-remove"><b>як позбутись:</b> ${esc(d.remove||'')}</div>${d.persistentUnlock?'<div class="state-popup-secret"><b>особливий ефект:</b> відкриває секретні дії [ЄБАТОРІУМ].</div>':''}</div></div>`;
+}
+
+function showNextStateModal(){
+  if(stateModalBusy||!stateModalQueue.length)return;
+  stateModalBusy=true;
+  const id=stateModalQueue.shift();
+  renderStatePopup(id);
+  const overlay=$('#stateOverlay');
+  overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');
+}
+
+function queueStateModal(id){
+  if(!STATUS_DEFS[id])return;
+  stateModalQueue.push(id);
+  showNextStateModal();
+}
+
+function closeStateModal(){
+  const overlay=$('#stateOverlay');
+  overlay.classList.add('hidden');overlay.setAttribute('aria-hidden','true');
+  stateModalBusy=false;
+  showNextStateModal();
+}
+
+function notifyGameEvents(events=[]){
+  for(const event of events){
+    if(event.type==='statusAdded'){
+      if(STATUS_DEFS[event.id])queueStateModal(event.id);
+    }else if(event.type==='statusRemoved'){
+      const d=STATUS_DEFS[event.id];
+      if(d)toast('СТАН ЗНЯТО',d.name);
+    }
+  }
 }
 
 function askConfirm({title='Почати заново?',text='',okText='Так, почати заново'}={}){
@@ -169,7 +234,11 @@ function ensureSceneEntered(){
   const entered=new Set(G.story.entered||[]);
   if(entered.has(scene.id))return scene;
   const effects=resolveSceneValue(scene.onEnter||[],G)||[];
-  if(effects.length)G=executeAction(G,{id:`enter_${scene.id}`,effects}).state;
+  if(effects.length){
+    const result=executeAction(G,{id:`enter_${scene.id}`,effects});
+    G=result.state;
+    notifyGameEvents(result.events);
+  }
   G.story.entered=[...(G.story.entered||[]),scene.id];
   G.story.sceneId=scene.id;G.scene=scene.id;
   scheduleSceneSfx(scene);
@@ -232,11 +301,6 @@ function pigeonIsPresent(){
   return actors.some(a=>a?.role==='pigeon');
 }
 
-function choiceMeta(choice){
-  const parts=[...previewAction(G,choice),...(choice.meta||[])];
-  return [...new Set(parts.filter(Boolean))];
-}
-
 function canFitItem(id,qty=1){
   const def=ITEM_DEFS[id];if(!def)return false;
   let left=qty;
@@ -254,6 +318,7 @@ async function choose(choice){
   if(choice.sfx)audioManager.playEffect(choice.sfx,{volume:0.9});
   const result=executeAction(G,{id:choice.id,minutes:choice.minutes||0,activity:choice.activity||'light',effects:choice.effects||[],hiddenEffects:choice.hiddenEffects||[]});
   G=result.state;
+  notifyGameEvents(result.events);
   if(choice.next){G.story.sceneId=choice.next;G.scene=choice.next;}
   await persist();
   renderGame();
@@ -276,8 +341,9 @@ function renderStory(scene){
   for(const choice of choices){
     const b=document.createElement('button');
     b.className=`story-choice${choice.kind==='secret'?' secret':''}`;
-    const meta=choiceMeta(choice);
-    b.innerHTML=`<span class="choice-main">${esc(choice.label)}</span>${meta.length?`<span class="choice-meta">${meta.map(x=>`<span>${esc(x)}</span>`).join('')}</span>`:''}`;
+    const preview=previewAction(G,{id:`preview_${choice.id}`,minutes:choice.minutes||0,activity:choice.activity||'light',effects:choice.effects||[],hiddenEffects:[]})
+      .filter(x=>/^(Бадьорість|Вода|Ситість|Здоровʼя) /.test(x));
+    b.innerHTML=`<span class="choice-main">${esc(choice.label)}</span>${preview.length?`<span class="choice-meta">${preview.map(x=>`<span>${esc(x)}</span>`).join('')}</span>`:''}`;
     b.onclick=()=>choose(choice).catch(console.error);
     root.appendChild(b);
   }
@@ -295,7 +361,7 @@ function renderQuickSlots(){
     if(!id){openMenu('inventory');return;}
     const result=useItem(G,id);
     if(!result.used){toast('НЕ ВИЙШЛО','Цей предмет зараз не використовується напряму.');return;}
-    G=result.state;await persist();renderGame();if(!$('#menuOverlay').classList.contains('hidden'))renderMenu();toast('ВИКОРИСТАНО',ITEM_DEFS[id]?.name||id);
+    G=result.state;notifyGameEvents(result.events);await persist();renderGame();if(!$('#menuOverlay').classList.contains('hidden'))renderMenu();toast('ВИКОРИСТАНО',ITEM_DEFS[id]?.name||id);
   });
 }
 
@@ -320,18 +386,72 @@ function renderMenu(){
   if(currentTab==='settings')renderSettings();
 }
 
-function renderInventory(){
-  const root=$('#menuContent'),slots=[...G.inventory];while(slots.length<16)slots.push(null);
-  root.innerHTML=`<div class="section-title"><h2>Інвентар</h2><span class="small">${G.inventory.length}/16 слотів</span></div><p class="explain">Те, що ви зʼїли, випили або віддали персонажу, зникає по-справжньому.</p><div class="inventory-grid">${slots.map(slot=>{
+function inventoryCategoryKey(item){
+  const cat=ITEM_DEFS[item?.id]?.category||'';
+  if(cat==='Їжа'||cat==='Їжа та напої')return 'food';
+  if(cat==='Медицина'||cat==='Ліки')return 'medicine';
+  if(cat==='Зброя')return 'weapon';
+  if(cat==='Якась хуйня')return 'weird';
+  return 'other';
+}
+
+function renderInventory(cat=inventoryCategory){
+  inventoryCategory=cat||'all';
+  const root=$('#menuContent');
+  const occupied=[...G.inventory];
+  const used=occupied.length;
+  const tabs=[
+    ['all','Все'],
+    ['food','Їжа та напої'],
+    ['medicine','Ліки'],
+    ['weapon','Зброя'],
+    ['weird','Якась хуйня']
+  ];
+  const tabHtml=`<div class="inventory-tabs">${tabs.map(([id,label])=>`<button class="inventory-tab${inventoryCategory===id?' active':''}" data-invcat="${id}">${esc(label)}</button>`).join('')}</div>`;
+
+  let visible;
+  if(inventoryCategory==='all'){
+    visible=[...occupied];
+    while(visible.length<16)visible.push(null);
+  }else{
+    visible=occupied.filter(slot=>slot&&inventoryCategoryKey(slot)===inventoryCategory);
+  }
+
+  const itemCards=visible.length?visible.map(slot=>{
     if(!slot)return '<div class="inventory-slot empty">Пусто</div>';
     const d=ITEM_DEFS[slot.id]||{name:slot.id,icon:'◻️',category:'Інше',description:''};
     const canUse=Array.isArray(d.useEffects)&&d.useEffects.length>0;
     return `<div class="inventory-slot"><div><div class="item-top"><span class="item-icon">${d.icon}</span><span class="item-qty">×${slot.qty}</span></div><div class="item-name">${esc(d.name)}</div><div class="item-cat">${esc(d.category)}</div><div class="item-desc">${esc(d.description||'')}</div></div><div class="item-actions">${canUse?`<button data-use="${slot.id}">Використати</button>`:''}${slot.id==='salo'&&G.flags.metPigeon&&pigeonIsPresent()?`<button data-gift-pigeon="salo">Дати ${G.flags.knowsPigeonName?'Євпапію':'голубу'}</button>`:''}<button data-quick="${slot.id}">У швидкий слот</button></div></div>`;
-  }).join('')}</div><div class="section-title" style="margin-top:18px"><h2>Важливе</h2></div><div class="important-list">${G.importantItems.length?G.importantItems.map(x=>`<div class="important-card"><b>${esc(x.name||x.id)}</b></div>`).join(''):'<div class="locked-card"><b>Поки пусто.</b></div>'}</div>`;
-  root.querySelectorAll('[data-use]').forEach(b=>b.onclick=async()=>{const result=useItem(G,b.dataset.use);if(!result.used){toast('НЕ ВИЙШЛО','Цей предмет зараз не використовується напряму.');return;}G=result.state;await persist();renderGame();renderInventory();toast('ВИКОРИСТАНО',ITEM_DEFS[b.dataset.use]?.name||b.dataset.use)});
+  }).join(''):'<div class="inventory-empty-category">Поки пусто.</div>';
+
+  const charImg=G.flags.localClothes?'./man_local.png':'./man_base.png';
+  const charName=G.flags.localClothes?'Місцевий прикид':'Ваш прикид';
+  const important=G.importantItems.length?G.importantItems.map(x=>`<div class="important-card"><b>${esc(x.name||x.id)}</b></div>`).join(''):'<div class="locked-card"><b>Поки пусто.</b></div>';
+
+  root.innerHTML=`
+    <div class="section-title"><h2>Інвентар</h2><span class="small">${used}/16 слотів</span></div>
+    <div class="inventory-character-layout">
+      <div class="inventory-left">
+        ${tabHtml}
+        <div class="inventory-grid${inventoryCategory!=='all'?' filtered':''}">${itemCards}</div>
+        <div class="section-title inventory-important-title"><h2>Важливе</h2></div>
+        <div class="important-list">${important}</div>
+      </div>
+      <aside class="inventory-character-pane">
+        <img src="${charImg}" alt="Герой">
+        <div class="inventory-character-name">${esc(charName)}</div>
+      </aside>
+    </div>`;
+
+  root.querySelectorAll('[data-invcat]').forEach(b=>b.onclick=()=>renderInventory(b.dataset.invcat));
+  root.querySelectorAll('[data-use]').forEach(b=>b.onclick=async()=>{
+    const result=useItem(G,b.dataset.use);
+    if(!result.used){toast('НЕ ВИЙШЛО','Цей предмет зараз не використовується напряму.');return;}
+    G=result.state;notifyGameEvents(result.events);await persist();renderGame();renderInventory(inventoryCategory);toast('ВИКОРИСТАНО',ITEM_DEFS[b.dataset.use]?.name||b.dataset.use);
+  });
   root.querySelectorAll('[data-gift-pigeon]').forEach(b=>b.onclick=async()=>{
-    if(!pigeonIsPresent()||itemCount(G,'salo')<=0){toast('НЕ ВИЙШЛО','Голуб зараз не поруч або сала вже нема.');renderInventory();return;}
-    G=executeAction(G,{id:'gift_pigeon_salo',hiddenEffects:[
+    if(!pigeonIsPresent()||itemCount(G,'salo')<=0){toast('НЕ ВИЙШЛО','Голуб зараз не поруч або сала вже нема.');renderInventory(inventoryCategory);return;}
+    const result=executeAction(G,{id:'gift_pigeon_salo',hiddenEffects:[
       {type:'itemRemove',id:'salo',qty:1},
       {type:'relationship',person:'evpapiy',key:'trust',value:1},
       {type:'relationship',person:'evpapiy',key:'offense',value:-1},
@@ -339,8 +459,10 @@ function renderInventory(){
       {type:'relationshipDiscover',person:'evpapiy',key:'offense'},
       {type:'flag',key:'gavePigeonSalo',value:true},
       {type:'memory',person:'evpapiy',key:'receivedSaloGift',value:true}
-    ]}).state;
-    await persist();renderGame();renderInventory();toast(G.flags.knowsPigeonName?'ЄВПАПІЙ ВЗЯВ САЛО':'ГОЛУБ ВЗЯВ САЛО','Довіра +1 · Образа -1');
+    ]});
+    G=result.state;
+    notifyGameEvents(result.events);
+    await persist();renderGame();renderInventory(inventoryCategory);toast(G.flags.knowsPigeonName?'ЄВПАПІЙ ВЗЯВ САЛО':'ГОЛУБ ВЗЯВ САЛО','Сало зникло з інвентаря.');
   });
   root.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{pendingQuickItem=b.dataset.quick;$('#slotPickerOverlay').classList.remove('hidden');renderSlotPicker()});
 }
@@ -348,7 +470,7 @@ function renderInventory(){
 function renderSlotPicker(){
   const root=$('#slotPickerButtons');
   root.innerHTML=[0,1,2].map(i=>{const current=G.quickSlots[i],c=current?ITEM_DEFS[current]:null;return `<button data-slot="${i}"><b>Слот ${i+1}</b><br><span class="small">${c?`${c.icon} ${esc(c.name)}`:'пусто'}</span></button>`}).join('');
-  root.querySelectorAll('[data-slot]').forEach(b=>b.onclick=async()=>{assignQuickSlot(G,Number(b.dataset.slot),pendingQuickItem);$('#slotPickerOverlay').classList.add('hidden');pendingQuickItem=null;await persist();renderGame();renderInventory()});
+  root.querySelectorAll('[data-slot]').forEach(b=>b.onclick=async()=>{assignQuickSlot(G,Number(b.dataset.slot),pendingQuickItem);$('#slotPickerOverlay').classList.add('hidden');pendingQuickItem=null;await persist();renderGame();renderInventory(inventoryCategory)});
 }
 
 function renderClothes(){
@@ -357,13 +479,24 @@ function renderClothes(){
     const d=CLOTHES[id];if(!d)return'';const on=G.equipment[d.slot]===id;const chips=[`Броня +${d.armor}`,`Холод +${d.warmth}`];if(d.heatBurden)chips.push(`Жара -${d.heatBurden}`);if(d.rainProtection)chips.push(`Дощ +${d.rainProtection}`);if(d.statMods)for(const [k,v] of Object.entries(d.statMods))chips.push(`${STAT_LABELS[k]} ${v>0?'+':''}${v}`);
     return `<div class="clothes-card"><div class="clothes-head"><div><b>${esc(d.name)}</b><div class="small">${esc(d.note||'')}</div></div><button data-equip="${id}" ${on?'disabled':''}>${on?'Вдягнено':'Вдягнути'}</button></div><div class="chips">${chips.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div></div>`;
   }).join('')}</div>`;
-  root.querySelectorAll('[data-equip]').forEach(b=>b.onclick=async()=>{equip(G,b.dataset.equip);await persist();renderGame();renderClothes()});
+  root.querySelectorAll('[data-equip]').forEach(b=>b.onclick=async()=>{
+    const before=new Set(G.activeStatuses||[]);
+    equip(G,b.dataset.equip);
+    const after=new Set(G.activeStatuses||[]);
+    const events=[];
+    for(const id of after)if(!before.has(id))events.push({type:'statusAdded',id});
+    for(const id of before)if(!after.has(id))events.push({type:'statusRemoved',id});
+    notifyGameEvents(events);
+    await persist();renderGame();renderClothes();
+  });
 }
 
 function renderStats(){
   const root=$('#menuContent'),mods=statModifiers(G);
   root.innerHTML=`<div class="section-title"><h2>Характеристики</h2></div><p class="explain">Прогрес постійний. Стани й одяг змінюють тільки значення «Зараз».</p><div class="stat-list">${STAT_KEYS.map(k=>{
-    const s=G.stats[k],mod=mods[k]||0,now=effectiveStat(G,k),pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<s.progress?'on':''}"></span>`).join('');
+    const s=G.stats[k],mod=mods[k]||0,now=effectiveStat(G,k),base=Math.max(0,Math.min(10,Number(s.progress||0)));
+    const lost=Math.min(base,Math.max(0,-mod)),kept=base-lost,bonus=Math.max(0,Math.min(10-base,mod));
+    const pips=Array.from({length:10},(_,i)=>{let cls='pip';if(i<kept)cls+=' base';else if(i<base)cls+=' debuff';else if(i<base+bonus)cls+=' buff';return `<span class="${cls}"></span>`}).join('');
     return `<div class="stat-card"><div><div class="stat-name">${STAT_LABELS[k]}</div><div class="stat-desc">${STAT_DESCRIPTIONS[k]}</div><div class="stat-meta">Рівень ${s.level} · прогрес ${s.progress}/10${mod?` · тимчасово ${mod>0?'+':''}${mod}`:''} · <b>Зараз: ${now}</b></div></div><div class="stat-meter">${pips}</div></div>`;
   }).join('')}</div>`;
 }
@@ -432,6 +565,7 @@ $('#menuBtn').onclick=()=>{audioManager.unlock();openMenu()};
 $('#exitBtn').onclick=showStart;
 $('#closeMenuBtn').onclick=closeMenu;
 $('#closeSlotPickerBtn').onclick=()=>{$('#slotPickerOverlay').classList.add('hidden');pendingQuickItem=null};
+$('#stateOkBtn').onclick=closeStateModal;
 
 document.querySelectorAll('#menuTabs [data-tab]').forEach(b=>b.onclick=()=>{currentTab=b.dataset.tab;renderMenu()});
 $('#menuOverlay').addEventListener('click',e=>{if(e.target===$('#menuOverlay'))closeMenu()});
