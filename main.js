@@ -1,16 +1,16 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=058';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=058';
+} from './config.js?v=059';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=059';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=058';
+} from './engine.js?v=059';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=058';
-import {audioManager} from './audio.js?v=058';
+} from './storage.js?v=059';
+import {audioManager} from './audio.js?v=059';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -61,13 +61,12 @@ async function beginFromHowTo(){
   showGame();
 }
 
-function renderHowTo(){
-  const root=$('#menuContent');
-  root.innerHTML=`
+function renderHowTo(root=$('#menuContent'),{embedded=false}={}){
+  const heading=embedded?'':`
     <div class="section-title"><h2>Як грати</h2></div>
     <p class="explain">Той самий вступ із початку нової гри. Можна перечитати, якщо вже забули, шо тут до чого.</p>
-    ${howToCards()}
   `;
+  root.innerHTML=`${heading}${howToCards()}`;
 }
 
 function toast(title,body=''){
@@ -296,9 +295,7 @@ function renderMenu(){
   if(currentTab==='relations')renderRelations();
   if(currentTab==='map')renderMap();
   if(currentTab==='shop')renderShop();
-  if(currentTab==='audio')renderAudio();
-  if(currentTab==='howto')renderHowTo();
-  if(currentTab==='saves')renderSaves();
+  if(currentTab==='settings')renderSettings();
 }
 
 function renderInventory(){
@@ -526,15 +523,62 @@ function renderShop(){
 
 
 
-function renderAudio(){
+function renderSettings(){
   const root=$('#menuContent');
+  root.innerHTML=`
+    <div class="section-title"><h2>Налаштування</h2></div>
+    <p class="explain">Тут лежить усе, що не треба бачити перед очима під час самої гри.</p>
+
+    <div class="settings-list">
+      <details class="settings-section" data-settings-section="audio">
+        <summary>
+          <span><b>Звук</b><small>Гучність, атмосфера й ефекти</small></span>
+        </summary>
+        <div id="settingsAudio" class="settings-body"></div>
+      </details>
+
+      <details class="settings-section" data-settings-section="howto">
+        <summary>
+          <span><b>Як грати</b><small>Вибори, стани, характеристики й виживання</small></span>
+        </summary>
+        <div id="settingsHowTo" class="settings-body"></div>
+      </details>
+
+      <details class="settings-section" data-settings-section="saves">
+        <summary>
+          <span><b>Збереження</b><small>Автосейв і ручні слоти</small></span>
+        </summary>
+        <div id="settingsSaves" class="settings-body"></div>
+      </details>
+    </div>
+  `;
+
+  const lazy=(name,load)=>{
+    const details=root.querySelector(`[data-settings-section="${name}"]`);
+    details.addEventListener('toggle',()=>{
+      if(!details.open||details.dataset.loaded==='1')return;
+      details.dataset.loaded='1';
+      load();
+    });
+  };
+
+  lazy('audio',()=>renderAudio(root.querySelector('#settingsAudio'),{embedded:true}));
+  lazy('howto',()=>renderHowTo(root.querySelector('#settingsHowTo'),{embedded:true}));
+  lazy('saves',()=>renderSaves(root.querySelector('#settingsSaves'),{embedded:true}));
+}
+
+function renderAudio(root=$('#menuContent'),{embedded=false}={}){
   const s=audioManager.getSettings();
   const pct=v=>Math.round(v*100);
-
-  root.innerHTML=`
+  const q=sel=>root.querySelector(sel);
+  const heading=embedded?'':`
     <div class="section-title"><h2>Звук</h2></div>
     <p class="explain">На iPhone звук активується після першого натискання. Далі сцени самі перемикатимуть атмосферу й запускатимуть потрібні ефекти.</p>
+  `;
 
+  root.innerHTML=`
+    ${heading}
+    ${embedded?'<p class="settings-copy">На iPhone звук активується після першого натискання. Далі сцени самі перемикатимуть атмосферу й запускатимуть потрібні ефекти.</p>':''}
     <div class="audio-settings">
       <div class="audio-card">
         <div class="audio-toggle">
@@ -590,14 +634,14 @@ function renderAudio(){
     </div>
   `;
 
-  $('#audioToggleBtn').onclick=async()=>{
+  q('#audioToggleBtn').onclick=async()=>{
     const next=!audioManager.getSettings().enabled;
     await audioManager.setEnabled(next);
-    renderAudio();
+    renderAudio(root,{embedded});
   };
 
   const bind=(id,kind,valueId)=>{
-    const input=$(id),value=$(valueId);
+    const input=q(id),value=q(valueId);
     input.oninput=()=>{
       const v=Number(input.value)/100;
       audioManager.setVolume(kind,v);
@@ -624,13 +668,14 @@ function renderAudio(){
   });
 }
 
-async function renderSaves(){
-  const root=$('#menuContent'),saves=await listManual(G.runId);
+async function renderSaves(root=$('#menuContent'),{embedded=false}={}){
+  const saves=await listManual(G.runId);
   const at=G.lastAutosaveAt?new Date(G.lastAutosaveAt).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ще нема';
+  const heading=embedded?'':`<div class="section-title"><h2>Збереження</h2></div>`;
 
   root.innerHTML=`
-    <div class="section-title"><h2>Збереження</h2></div>
-    <p class="explain">Автосейв: ${at}. Він спрацьовує після важливих змін і дублюється у двох сховищах браузера.</p>
+    ${heading}
+    <p class="${embedded?'settings-copy':'explain'}">Автосейв: ${at}. Він спрацьовує після важливих змін і дублюється у двох сховищах браузера.</p>
     <div class="save-list">
       ${saves.map(({slot,state})=>{
         const s=state?normalizeState(state):null,tm=s?formatTime(s.clock.totalMinutes):null;
@@ -645,7 +690,7 @@ async function renderSaves(){
   root.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
     await saveManual(G,Number(b.dataset.save));
     toast('ЗБЕРЕЖЕНО',`Ручний слот ${b.dataset.save}`);
-    renderSaves();
+    renderSaves(root,{embedded});
   });
 
   root.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{
@@ -654,7 +699,9 @@ async function renderSaves(){
     G=normalizeState(state);
     await persist();
     renderGame();
-    renderSaves();
+    const tm=formatTime(G.clock.totalMinutes);
+    $('#menuMeta').textContent=`Проходження ${G.runId} · День ${tm.day} · ${tm.time}`;
+    renderSaves(root,{embedded});
     toast('ЗАВАНТАЖЕНО',`Ручний слот ${b.dataset.load}`);
   });
 }
