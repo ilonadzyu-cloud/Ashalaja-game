@@ -1,0 +1,52 @@
+:root{
+  color-scheme:dark;
+  --panel:#121914;--panel2:#192119;--line:#29352b;--text:#efe8da;--muted:#a99f91;
+  --accent:#c8b986;--good:#8fca8f;--bad:#d87d78;--warn:#d9b46f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#172019 0,#0b100d 45%);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}
+.screen{width:min(980px,100%);margin:0 auto;padding:14px 14px 70px}
+.hidden{display:none!important}
+.hero-card,.panel,.compactHud,.tabs{background:rgba(18,25,20,.97);border:1px solid var(--line);border-radius:17px;padding:14px;margin:9px 0;box-shadow:0 12px 30px #0003}
+.hero-card{padding:22px;max-width:760px;margin-inline:auto}
+h1{font-size:clamp(36px,10vw,68px);line-height:.94;margin:8px 0 16px}
+h2{font-size:17px;margin:0 0 10px}
+p{line-height:1.52;color:#d7d0c4}
+.eyebrow{font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:900}
+.small{font-size:12px;color:var(--muted)}
+.compactHud{display:grid;grid-template-columns:minmax(230px,1.3fr) minmax(360px,2fr) auto;gap:12px;align-items:center;position:sticky;top:7px;z-index:5;padding:10px 12px}
+.hud-line{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:12px}
+.hud-line span{color:var(--muted)}
+.miniNeeds{display:grid;grid-template-columns:repeat(4,minmax(76px,1fr));gap:6px}
+.needChip{background:#0d130f;border:1px solid #263228;border-radius:10px;padding:7px 8px}
+.needChip b{display:block;font-size:10px;color:var(--muted);margin-bottom:2px}
+.needChip span{font-weight:900}
+button{border:1px solid #4a5b4d;background:#253126;color:var(--text);border-radius:11px;padding:10px 12px;cursor:pointer}
+button:hover{background:#303d31}
+button.primary{background:#ddd0a2;color:#11170f;border-color:#ddd0a2;font-weight:900}
+button.ghost{background:transparent}
+.run{padding:13px;border:1px solid var(--line);border-radius:14px;margin:8px 0;background:var(--panel2)}
+.run-head,.panel-head,.relation-head,.clothes-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.run-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.tabs{display:flex;gap:7px;overflow-x:auto;padding:8px}
+.tab{white-space:nowrap;background:#161e18}.tab.active{border-color:var(--accent);color:var(--accent)}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.09em;background:#283329;color:var(--accent);padding:5px 7px;border-radius:999px}
+.actions{display:grid;gap:9px;margin-top:12px}.action{text-align:left;padding:12px}.action-title{font-weight:850}.action-preview{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.state,.book-row,.clothes-row,.stat-row,.save-row,.relation-row{border-top:1px solid var(--line);padding:10px 0}
+.state:first-child,.book-row:first-child,.clothes-row:first-child,.stat-row:first-child,.save-row:first-child,.relation-row:first-child{border-top:0}
+.clothes-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.stat-row{display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:center}.stat-meter{display:flex;gap:3px}.pip{height:8px;flex:1;border-radius:3px;background:#263028}.pip.on{background:#b7aa7c}
+.relation-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0;background:#0e1510}.relation-params{display:grid;gap:7px;margin-top:10px}.relation-param{display:grid;grid-template-columns:120px 1fr 42px;gap:8px;align-items:center}.relTrack{height:7px;background:#232d25;border-radius:999px;overflow:hidden}.relFill{height:100%;background:#b7aa7c}
+.locked{color:#777}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.summary>div{background:#0d130f;padding:10px;border-radius:10px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);width:min(92vw,520px);background:#1b241d;border:1px solid #556858;padding:12px 14px;border-radius:14px;box-shadow:0 16px 50px #0008;z-index:20}.toast b{display:block;margin-bottom:2px}
+@media(max-width:760px){
+  .compactHud{position:static;grid-template-columns:1fr auto}
+  .miniNeeds{grid-column:1/-1;order:3}
+}
+@media(max-width:520px){
+  .miniNeeds{grid-template-columns:repeat(2,1fr)}
+  .stat-row{grid-template-columns:1fr}
+  .relation-param{grid-template-columns:100px 1fr 36px}
+}
