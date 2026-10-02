@@ -175,3 +175,24 @@ button.ghost{background:transparent}
 button.danger{background:#472927;border-color:#71413d;color:#f1c6c1;font-weight:900}
 button.danger:hover{background:#59302d}
 @media(max-width:520px){.confirm-actions{grid-template-columns:1fr}}
+
+
+.audio-settings{display:grid;gap:12px}
+.audio-card{
+  border:1px solid var(--line);border-radius:13px;background:#111813;padding:12px
+}
+.audio-row{
+  display:grid;grid-template-columns:minmax(120px,1fr) minmax(180px,2fr) 52px;
+  gap:10px;align-items:center;margin-top:10px
+}
+.audio-row:first-child{margin-top:0}
+.audio-row input[type="range"]{width:100%}
+.audio-toggle{
+  display:flex;justify-content:space-between;align-items:center;gap:12px
+}
+.audio-toggle button.on{border-color:var(--good);color:var(--good)}
+.audio-toggle button.off{border-color:var(--bad);color:var(--bad)}
+.audio-test{margin-top:12px}
+@media(max-width:520px){
+  .audio-row{grid-template-columns:1fr}
+}

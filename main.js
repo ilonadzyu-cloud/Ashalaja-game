@@ -1,15 +1,16 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=052';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=052';
+} from './config.js?v=053';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=053';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=052';
+} from './engine.js?v=053';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=052';
+} from './storage.js?v=053';
+import {audioManager} from './audio.js?v=053';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -235,6 +236,7 @@ function renderMenu(){
   if(currentTab==='relations')renderRelations();
   if(currentTab==='map')renderMap();
   if(currentTab==='shop')renderShop();
+  if(currentTab==='audio')renderAudio();
   if(currentTab==='saves')renderSaves();
 }
 
@@ -419,6 +421,79 @@ function renderShop(){
   `;
 }
 
+
+function renderAudio(){
+  const root=$('#menuContent');
+  const s=audioManager.getSettings();
+  const pct=v=>Math.round(v*100);
+
+  root.innerHTML=`
+    <div class="section-title"><h2>Звук</h2></div>
+    <p class="explain">На iPhone звук активується тільки після вашого натискання. Після першої взаємодії гра вже може запускати музику, атмосферу й ефекти сама.</p>
+
+    <div class="audio-settings">
+      <div class="audio-card">
+        <div class="audio-toggle">
+          <div>
+            <b>Звук у грі</b>
+            <div class="small">${s.enabled?'Увімкнено':'Вимкнено'}</div>
+          </div>
+          <button id="audioToggleBtn" class="${s.enabled?'on':'off'}">${s.enabled?'Вимкнути':'Увімкнути'}</button>
+        </div>
+      </div>
+
+      <div class="audio-card">
+        <div class="audio-row">
+          <b>Загальна гучність</b>
+          <input id="masterVolume" type="range" min="0" max="100" value="${pct(s.master)}">
+          <span id="masterVolumeValue">${pct(s.master)}%</span>
+        </div>
+        <div class="audio-row">
+          <b>Музика</b>
+          <input id="musicVolume" type="range" min="0" max="100" value="${pct(s.music)}">
+          <span id="musicVolumeValue">${pct(s.music)}%</span>
+        </div>
+        <div class="audio-row">
+          <b>Ефекти</b>
+          <input id="effectsVolume" type="range" min="0" max="100" value="${pct(s.effects)}">
+          <span id="effectsVolumeValue">${pct(s.effects)}%</span>
+        </div>
+        <button id="audioTestBtn" class="audio-test">🔊 Перевірити звук</button>
+      </div>
+
+      <div class="locked-card">
+        <b>Аудіосистема готова.</b>
+        <div class="small">Справжні звуки села, дощу, Євпапія, сараю й музика підключатимуться окремими файлами разом зі сценами.</div>
+      </div>
+    </div>
+  `;
+
+  $('#audioToggleBtn').onclick=async()=>{
+    const next=!audioManager.getSettings().enabled;
+    audioManager.setEnabled(next);
+    if(next)await audioManager.unlock();
+    renderAudio();
+  };
+
+  const bind=(id,kind,valueId)=>{
+    const input=$(id),value=$(valueId);
+    input.oninput=()=>{
+      const v=Number(input.value)/100;
+      audioManager.setVolume(kind,v);
+      value.textContent=`${input.value}%`;
+    };
+  };
+
+  bind('#masterVolume','master','#masterVolumeValue');
+  bind('#musicVolume','music','#musicVolumeValue');
+  bind('#effectsVolume','effects','#effectsVolumeValue');
+
+  $('#audioTestBtn').onclick=async()=>{
+    const ok=await audioManager.testEffect();
+    toast(ok?'ЗВУК ПРАЦЮЄ':'ЗВУК НЕ ЗАПУСТИВСЯ',ok?'Аудіосистема активна.':'Спробуйте натиснути ще раз або перевірте, чи звук увімкнений.');
+  };
+}
+
 async function renderSaves(){
   const root=$('#menuContent'),saves=await listManual(G.runId);
   const at=G.lastAutosaveAt?new Date(G.lastAutosaveAt).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ще нема';
@@ -455,6 +530,7 @@ async function renderSaves(){
 }
 
 $('#newGameBtn').onclick=()=>{
+  audioManager.unlock();
   openRunPicker('new').catch(err=>{
     console.error(err);
     $('#runPicker').classList.remove('hidden');
@@ -462,13 +538,14 @@ $('#newGameBtn').onclick=()=>{
   });
 };
 $('#continueBtn').onclick=()=>{
+  audioManager.unlock();
   openRunPicker('continue').catch(err=>{
     console.error(err);
     $('#runPicker').classList.remove('hidden');
     $('#runPicker').innerHTML='<div class="run-card"><b>Не вдалося прочитати сейви.</b></div>';
   });
 };
-$('#menuBtn').onclick=()=>openMenu();
+$('#menuBtn').onclick=()=>{ audioManager.unlock(); openMenu(); };
 $('#exitBtn').onclick=showStart;
 $('#closeMenuBtn').onclick=closeMenu;
 $('#openInventoryBtn').onclick=()=>openMenu('inventory');
