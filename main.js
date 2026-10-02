@@ -1,10 +1,10 @@
-import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=080';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=080';
-import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem} from './engine.js?v=080';
-import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js?v=080';
+import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=081';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=081';
+import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem} from './engine.js?v=081';
+import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js?v=081';
 import {audioManager} from './audio.js?v=071';
-import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=080';
-import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=080';
+import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=081';
+import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=081';
 
 function getGameScene(state){
   const id=state?.story?.sceneId||state?.scene||'intro';
@@ -26,12 +26,12 @@ let sfxTimers=[];
 const categories=['all','Їжа та напої','Ліки','Зброя','Якась хуйня'];
 
 const statFlavor={
-  strength:{1:'Пока не Геракл.'},
-  attention:{1:'Шерлок з вас пока так собі.'},
-  agility:{1:'Не навернулись – уже добре.'},
-  charisma:{1:'Викрутитись можете, але шанс мізерний.'},
-  pofigism:{1:'Пока ше не всьо похуй.'},
-  ahui:{1:'Ви тільки починаєте ахуєвати.'}
+  strength:{1:'Пока не Геракл.',2:'Ну, лавку вже не боїтесь.',3:'Вже можна шось важче за голуба.',4:'Може, двері самі відкриються.',5:'Село починає берегти меблі.'},
+  attention:{1:'Шерлок з вас пока так собі.',2:'Шось таки помічаєте.',3:'Муху в супі вже не пропустите.',4:'Від вас хуй шо сховаєш.',5:'Бачите вже більше, ніж хотілось би.'},
+  agility:{1:'Не навернулись – уже добре.',2:'Ноги вже іноді слухаються.',3:'Може, навіть втечете красиво.',4:'Болото перестає бути босом.',5:'Поки всі думають – ви вже зʼїбались.'},
+  charisma:{1:'Викрутитись можете, але шанс мізерний.',2:'Вже не кожна розмова закінчується «йди нахуй».',3:'Можете даже когось переконати.',4:'Люди чомусь вас слухають.',5:'От тепер можна пиздіти впевнено.'},
+  pofigism:{1:'Пока ше не всьо похуй.',2:'Уже трохи легше дивитись на піздєц.',3:'«Ну і хуй з ним» працює частіше.',4:'Вас уже важко здивувати.',5:'Майже духовне просвітлення.'},
+  ahui:{1:'Ви тільки починаєте ахуєвати.',2:'Дивна хуйня вже не дивує кожні пʼять хвилин.',3:'Починаєте приймати правила цього дурдому.',4:'Самі вже звучите як місцевий.',5:'Ще трохи – і нормальне життя здасться дивним.'}
 };
 
 function statFlavorText(key,level){return statFlavor[key]?.[level]||`Рівень ${level}. Ше є куди рости.`}
@@ -70,6 +70,7 @@ function notifyEvents(events){
   for(const e of events||[]){
     if(e.type==='statusAdded')queueState(e.id);
     if(e.type==='statusRemoved')toast('СТАН ЗНЯТО',STATUS_DEFS[e.id]?.name||e.id);
+    if(e.type==='statLevelUp')toast(`${STAT_LABELS[e.key]||e.key} – НОВИЙ РІВЕНЬ`,`Рівень ${e.level}`);
   }
 }
 
@@ -216,7 +217,7 @@ function renderStage(scene){
   root.innerHTML=actors.map((a,i)=>{const src=resolveSceneValue(a.src,G);return `<img src="${src}" class="actor ${esc(a.role||'')} ${esc(a.position||'')} actor-${i}" alt="">`}).join('');
 }
 
-function resolveChoices(scene){const xs=resolveSceneValue(scene.choices||[],G)||[];return xs.filter(Boolean)}
+function resolveChoices(scene){const xs=resolveSceneValue(scene.choices||[],G)||[];return xs.filter(c=>c&&(!c.showIf||c.showIf(G)))}
 async function choose(choice){
   await audioManager.unlock();
   const r=executeAction(G,{id:choice.id,minutes:choice.minutes||0,activity:choice.activity||'light',effects:choice.effects||[],hiddenEffects:choice.hiddenEffects||[]});
@@ -236,7 +237,8 @@ function renderStory(scene){
     const b=document.createElement('button');
     b.className=`story-choice ${c.kind==='secret'?'secret':''}`;
     const prev=previewAction(G,{id:'preview',minutes:c.minutes||0,activity:c.activity||'light',effects:c.effects||[]}).filter(x=>/^(Бадьорість|Вода|Ситість|Здоровʼя)/.test(x));
-    b.innerHTML=`<span>${esc(c.label)}</span>${prev.length?`<small>${prev.map(esc).join(' · ')}</small>`:''}`;
+    const prevHtml=prev.map(x=>`<span class="choice-cost ${x.includes('+')?'plus':'minus'}">${esc(x)}</span>`).join(' · ');
+    b.innerHTML=`<span>${esc(c.label)}</span>${prev.length?`<small>${prevHtml}</small>`:''}`;
     b.onclick=()=>choose(c);
     root.appendChild(b);
   }
@@ -311,12 +313,12 @@ function renderClothes(){
 
 function renderStats(){
   const mods=statModifiers(G),root=$('#menuContent');
-  root.innerHTML=`<div class="section-title"><h2>Характеристики</h2></div><div class="info-card">Кожна характеристика має рівень і 10 поділок прогресу. Заповнили всі 10 – отримуєте новий рівень. Зелені поділки – тимчасовий плюс, червоні – тимчасовий мінус.</div><div class="stat-list">${STAT_KEYS.map(k=>{
-    const base=Math.max(0,Math.min(10,Number(G.stats[k]?.base||0))),mod=Number(mods[k]||0),now=effectiveStat(G,k),level=Number(G.stats[k]?.level||1);
-    const lost=Math.min(base,Math.max(0,-mod)),kept=base-lost,bonus=Math.max(0,Math.min(10-base,mod));
-    const pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<kept?'base':i<base?'debuff':i<base+bonus?'buff':''}"></span>`).join('');
+  root.innerHTML=`<div class="section-title"><h2>Характеристики</h2></div><div class="info-card">10 очок прогресу = новий рівень. Прогрес постійний, а стани й одяг дають тимчасовий плюс або мінус. Зелені поділки – плюс, червоні – мінус.</div><div class="stat-list">${STAT_KEYS.map(k=>{
+    const st=G.stats[k]||{level:1,progress:0},progress=Math.max(0,Math.min(9,Number(st.progress||0))),level=Math.max(1,Number(st.level||1)),mod=Number(mods[k]||0),now=effectiveStat(G,k);
+    const lost=Math.min(progress,Math.max(0,-mod)),kept=progress-lost,bonus=Math.max(0,Math.min(10-progress,mod));
+    const pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<kept?'base':i<progress?'debuff':i<progress+bonus?'buff':''}"></span>`).join('');
     const id=`stat-desc-${k}`;
-    return `<article class="stat-card"><div class="stat-head"><div><b>${STAT_LABELS[k]}</b> <button class="info-btn" type="button" data-info="${id}">ⓘ</button><div class="stat-level">Рівень ${level} · прогрес ${base}/10${mod?` · <span class="${mod>0?'buff-text':'debuff-text'}">тимчасово ${mod>0?'+':''}${mod}</span> · зараз ${now}`:''}</div></div></div><div class="stat-meter">${pips}</div><div class="stat-desc" id="${id}">${esc(STAT_DESCRIPTIONS[k])}</div><div class="stat-flavor">${esc(statFlavorText(k,level))}</div></article>`;
+    return `<article class="stat-card"><div class="stat-head"><div><b>${STAT_LABELS[k]}</b> <button class="info-btn" type="button" data-info="${id}">ⓘ</button><div class="stat-level">Рівень ${level} · прогрес ${progress}/10${mod?` · <span class="${mod>0?'buff-text':'debuff-text'}">тимчасово ${mod>0?'+':''}${mod}</span> · зараз ${now}`:''}</div></div></div><div class="stat-meter">${pips}</div><div class="stat-desc" id="${id}">${esc(STAT_DESCRIPTIONS[k])}</div><div class="stat-flavor">${esc(statFlavorText(k,level))}</div></article>`;
   }).join('')}</div>`;
   root.querySelectorAll('.info-btn').forEach(btn=>btn.onclick=()=>{const el=$('#'+btn.dataset.info);if(el)el.classList.toggle('open')});
 }
@@ -381,15 +383,30 @@ function renderRelations(){
 }
 
 function renderMap(){
-  const extra=G.flags.chapter2Started?`<article><b>Двір з поминками</b><span>Тут зараз зібралось пів села.</span></article>${G.flags.heardShedBang?'<article><b>Сарай</b><span>Звідти стукало. І це вже не дуже смішно.</span></article>':''}`:'';
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Карта</h2></div>${G.flags.mapUnlocked?`<div class="map-grid"><article><b>Хатина баби Галі</b><span>Тут ви вже були.</span></article><article><b>Криниця</b><span>Не плутати з калюжею.</span></article><article><b>Село</b><span>Потроху перестає бути просто фоном.</span></article>${extra}</div>`:'<div class="locked-big">Карта ще не відкрита.</div>'}`}
-
+  const known=G.flags.mapUnlocked;
+  const places=[];
+  if(known)places.push('<article><b>Хата з криницею</b><span>Тут усе й почалось.</span></article>');
+  if(G.flags.chapter2Started)places.push('<article><b>Двір з поминками</b><span>Тут зараз зібралось пів села.</span></article>');
+  if(G.flags.heardShedBang)places.push('<article><b>Сарай</b><span>Звідти стукало. І це вже не дуже смішно.</span></article>');
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Карта</h2></div><div class="map-visual ${known?'':'locked'}"><img src="./map_village.jpg" alt="Карта села">${known?'':`<div class="map-lock-copy"><b>ПОКИ ЗАКРИТО</b><span>Спочатку треба хоча б трохи розібратись, де ви взагалі опинились.</span></div>`}</div>${known?`<div class="map-grid">${places.join('')}</div>`:''}`;
+}
 
 function renderShop(){
   const items=[['water',4],['aspirin',8],['onion',2]];
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2><span>${G.money} мон.</span></div>${G.flags.shopUnlocked?`<div class="shop-grid">${items.map(([id,p])=>`<article class="item-card"><div class="item-icon">${ITEM_DEFS[id].icon}</div><div class="item-copy"><b>${esc(ITEM_DEFS[id].name)}</b><span>${p} мон.</span><button data-buy="${id}" data-price="${p}">Купити</button></div></article>`).join('')}</div>`:'<div class="locked-big">Ще закрито.</div>'}`;
+  const jobs=[
+    {id:'sweep',title:'Підмести двір',pay:2,minutes:15,done:G.flags.sweptYard,effects:[{type:'money',value:2}],hidden:[{type:'flag',key:'sweptYard',value:true}]},
+    {id:'wood',title:'Нарубати дрова',pay:4,minutes:25,done:G.flags.choppedWood,effects:[{type:'money',value:4},{type:'stat',key:'strength',value:1}],hidden:[{type:'flag',key:'choppedWood',value:true}]},
+    {id:'deal',title:'Підписатись на підозріле діло',pay:8,minutes:10,done:G.flags.suspiciousDeal,effects:[{type:'money',value:8}],hidden:[{type:'flag',key:'suspiciousDeal',value:true},{type:'flag',key:'suspiciousDealConsequence',value:true}]}
+  ];
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2><span><b>${G.money}</b> монет</span></div>${G.flags.shopUnlocked?`<div class="shop-money">У вас зараз <b>${G.money} монет</b>.</div><div class="shop-grid">${items.map(([id,p])=>`<article class="item-card"><div class="item-icon">${ITEM_DEFS[id].icon}</div><div class="item-copy"><b>${esc(ITEM_DEFS[id].name)}</b><span>${p} мон.</span><button data-buy="${id}" data-price="${p}">Купити</button></div></article>`).join('')}</div><div class="section-title shop-work-title"><h2>Як заробити</h2></div><div class="shop-jobs">${jobs.map(j=>`<article class="job-card ${j.done?'done':''}"><div><b>${esc(j.title)}</b><span>${j.done?'Уже зробили.':`${j.minutes} хв · +${j.pay} монет`}</span></div><button data-job="${j.id}" ${j.done?'disabled':''}>${j.done?'Готово':'Взятись'}</button></article>`).join('')}</div>`:'<div class="locked-big">Ще закрито.</div>'}`;
   document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{const p=Number(b.dataset.price);if(G.money<p){toast('НЕМА ГРОШЕЙ','Ну от так.');return}if(!addItem(G,b.dataset.buy,1)){toast('НЕМА МІСЦЯ','Інвентар забитий.');return}G.money-=p;await persist();renderShop()});
+  document.querySelectorAll('[data-job]').forEach(b=>b.onclick=async()=>{
+    const j=jobs.find(x=>x.id===b.dataset.job);if(!j||j.done)return;
+    const r=executeAction(G,{id:`shop_${j.id}`,minutes:j.minutes,activity:'work',effects:j.effects,hiddenEffects:j.hidden});
+    G=r.state;notifyEvents(r.events);await persist();await renderGame();renderShop();toast('ЗАРОБИЛИ',`+${j.pay} монет`);
+  });
 }
+
 
 async function renderSettings(){
   const root=$('#menuContent'),a=audioManager.getSettings(),manual=await listManual(G.runId);

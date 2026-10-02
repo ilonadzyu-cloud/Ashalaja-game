@@ -1,9 +1,10 @@
-import {ITEM_DEFS} from './data.js?v=080';
+import {ITEM_DEFS} from './data.js?v=081';
+import {effectiveStat} from './engine.js?v=081';
 
 const img=n=>`./${n}`;
 const hero=(name='ch2_hero_local.png',position='hero')=>({role:'hero',src:img(name),position});
 const pigeon=(name='pigeon_base.png',position='pigeon')=>({role:'pigeon',src:img(name),position});
-const hood=()=>({role:'npc',src:img('ch2_hooded.png'),position:'npc'});
+const hood=()=>({role:'npc',src:img('ch2_unknown.png'),position:'npc'});
 const yard={background:img('ch2_wake_yard.jpg'),atmosphere:'village',chapter:2,world:[{type:'world',key:'environment',value:'outdoors'},{type:'world',key:'location',value:'двір з поминками'}]};
 const shed={background:img('ch2_shed.jpg'),atmosphere:'village',chapter:2,world:[{type:'world',key:'environment',value:'outdoors'},{type:'world',key:'location',value:'за сараєм'}]};
 const table={background:img('ch2_table.jpg'),atmosphere:'village',chapter:2,world:[{type:'world',key:'environment',value:'outdoors'},{type:'world',key:'location',value:'за поминальним столом'}]};
@@ -82,7 +83,7 @@ export const CHAPTER2_SCENES={
 
   ch2_legend:{
     ...yard,id:'ch2_legend',caption:'місцева лєгенда',actors:[hero('ch2_hero_local.png'),pigeon('pigeon_suspicious.png','shoulder')],
-    text:`Євпапій тим часом уже знову сидить у вас на голові й дивиться на стіл. Точніше, на сало. Видно, що атмосфера поминок його хвилює значно менше.
+    text:`Євпапій тим часом уже знову сидить у вас на плечі й дивиться на стіл. Точніше, на сало. Видно, що атмосфера поминок його хвилює значно менше.
 
 Одна з жінок біля столу нарешті помічає вас. Дивиться спочатку на вас, потім трохи вище – на Євпапія.
 
@@ -90,7 +91,7 @@ export const CHAPTER2_SCENES={
 
 Євпапій перестає дивитись на сало.
 
-– Тааак, – ви піднімаєте очі на нього. – А то вже цікаво.
+– Тааак, – ви повертаєте голову до нього. – А то вже цікаво.
 
 – Шо?
 
@@ -98,7 +99,7 @@ export const CHAPTER2_SCENES={
     choices:[
       {id:'legend_ask',label:'Спитати жінку, шо значить «місцева лєгенда».',next:'ch2_benchask',hiddenEffects:[{type:'flag',key:'askedLocalLegend',value:true},{type:'memory',person:'evpapiy',key:'askedAboutLegend',value:true}]},
       {id:'legend_tease',label:'Підʼїбати Євпапія: «Ну шо, звєзда місцева?»',next:'ch2_benchask',hiddenEffects:[{type:'relationship',person:'evpapiy',key:'offense',value:1},{type:'memory',person:'evpapiy',key:'teasedAsLegend',value:true}]},
-      {id:'legend_attention',label:'[УВАЖНІСТЬ] Подивитись на Євпапія. Він якось дуже різко перестав дивитись на сало.',next:'ch2_benchask',effects:[{type:'stat',key:'attention',value:1}],hiddenEffects:[{type:'flag',key:'noticedPigeonLegendReaction',value:true}]},
+      {id:'legend_attention',label:'[УВАЖНІСТЬ] Подивитись на Євпапія. Він якось дуже різко перестав дивитись на сало.',showIf:s=>effectiveStat(s,'attention')>=3,next:'ch2_benchask',effects:[{type:'stat',key:'attention',value:1}],hiddenEffects:[{type:'flag',key:'noticedPigeonLegendReaction',value:true}]},
       {id:'legend_pofig',label:'Зробити вигляд, шо вам похуй.',next:'ch2_benchask',effects:[{type:'stat',key:'pofigism',value:1}],hiddenEffects:[{type:'memory',person:'evpapiy',key:'ignoredLegendComment',value:true}]}
     ]
   },
@@ -177,7 +178,9 @@ export const CHAPTER2_SCENES={
     },
     text:`Ви сидите за столом і поки їсте та пʼєте, у ваші кармани абсолютно випадково падає бутилка води та шматок сала.
 
-Не крадіжка. Чиста випадковість.`,
+Не крадіжка. Чиста випадковість.
+
+Коли вже нормально так наїлись і напились, ви розумієте, що добре було би відлити.`,
     notice:{title:'СТРАТЕГІЧНИЙ ЗАПАС',body:'💧 Вода ×1 · 🥓 Сало ×1'},
     choices:[{id:'supplies_pee',label:'Піти відлити.',next:'ch2_pee',minutes:5,activity:'walk'}]
   },
@@ -185,7 +188,7 @@ export const CHAPTER2_SCENES={
   ch2_pee:{
     ...shed,id:'ch2_pee',caption:'за сараєм',actors:[hero('ch2_hero_side.png')],
     onEnter:[{type:'flag',key:'heardShedConversation',value:true}],
-    text:`Коли вже нормально так наїлись і напились, ви розумієте, що добре було би відлити. У дворі людей дохуя, тому ви обходите сарай і стаєте ззаду, де вас хоча б ніхто не бачить.
+    text:`У дворі людей дохуя, тому ви обходите сарай і стаєте ззаду, де вас хоча б ніхто не бачить.
 
 Ви тільки починаєте робити свої справи, як з іншого боку сараю чуєте два голоси. Жіночий і чоловічий. Говорять тихо, але по голосу жінки чути, що вона нормально так нажахана.
 
@@ -204,8 +207,8 @@ export const CHAPTER2_SCENES={
   },
 
   ch2_bang:{
-    ...shed,id:'ch2_bang',caption:'бах',actors:[hero('ch2_hero_scared.png'),pigeon('pigeon_suspicious.png')],sfxOnEnter:[{id:'bang',delay:350},{id:'bang',delay:1200},{id:'bang',delay:2100}],
-    onEnter:[{type:'statusAdd',id:'scared'},{type:'flag',key:'heardShedBang',value:true}],
+    ...shed,id:'ch2_bang',caption:'бах',actors:[hero('ch2_hero_side.png')],sfxOnEnter:[{id:'bang',delay:350},{id:'bang',delay:1350}],
+    onEnter:[{type:'flag',key:'heardShedBang',value:true}],
     text:`Ви собі далі спокійно відливаєте, коли десь зовсім поруч:
 
 БАХ.
@@ -218,13 +221,22 @@ export const CHAPTER2_SCENES={
 
 Цього разу сильніше.
 
-– Блядь…
+– Блядь…`,
+    choices:[{id:'bang_wait',label:'…',next:'ch2_bang3'}]
+  },
 
-І ще один удар, уже нормально так.
+  ch2_bang3:{
+    ...shed,id:'ch2_bang3',caption:'бах',actors:[hero('ch2_hero_scared.png')],sfxOnEnter:[{id:'bang',delay:350}],
+    text:`І ще один удар, уже нормально так.
 
-БАХ.
+БАХ.`,
+    choices:[{id:'bang3_next',label:'Блядь…',next:'ch2_after_bang'}]
+  },
 
-Євпапій, який до цього десь шарився неподалік, теж завмирає й дивиться в бік сараю.
+  ch2_after_bang:{
+    ...shed,id:'ch2_after_bang',caption:'це вже не причулось',actors:[hero('ch2_hero_scared.png'),pigeon('pigeon_suspicious.png')],
+    onEnter:[{type:'statusAdd',id:'scared'}],
+    text:`Євпапій, який до цього десь шарився неподалік, теж завмирає й дивиться в бік сараю.
 
 О.
 
@@ -376,7 +388,7 @@ export const CHAPTER2_SCENES={
 
   ch2_figure:{
     ...shed,id:'ch2_figure',caption:'стій',actors:[hero('ch2_hero_scared.png'),hood()],
-    text:s=>`Ви біжите назад до людей. Минаєте сарай, навіть не дивлячись по сторонах.
+    text:s=>`${s.flags?.ignoredShed?'Ви йдете назад до людей.':'Ви біжите назад до людей.'} Минаєте сарай, навіть не дивлячись по сторонах.
 
 І раптом хтось позаду різко хапає вас за сорочку.
 

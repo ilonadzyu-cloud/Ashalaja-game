@@ -1,4 +1,4 @@
-import {ITEM_DEFS} from './data.js?v=080';
+import {ITEM_DEFS} from './data.js?v=081';
 
 const img=n=>`./${n}`;
 const hero=(name='man_base.png',position='hero')=>({role:'hero',src:img(name),position});
@@ -23,7 +23,7 @@ export const CHAPTER1_START='intro';
 export const CHAPTER1_SCENES={
  intro:{...outside,id:'intro',caption:'десь не там',hud:img('portrait_base.png'),actors:[hero()],text:`Останнє, що ви пам’ятаєте – рибалка. Риба не клювала, комари вас жерли так, ніби то їх остання вечеря. Потім для доброго настрою пішла пляшечка. За нею ше одна, потім ше одна… А далі вже провал.
 
-До тями ви приходите вже зранку наступного дня. Після дощу сиро, навколо туман, від землі тягне вологою, а в роті страшний сушняк. Поруч сільська хитина, біля неї криниця, а у вікні світиться жовте світло.
+До тями ви приходите вже зранку наступного дня. Після дощу сиро, навколо туман, від землі тягне вологою, а в роті страшний сушняк. Поруч сільська хатина, біля неї криниця, а у вікні світиться жовте світло.
 
 І тут вам на плече падає щось тепле.`,choices:[{id:'intro_next',label:'Далі',next:'poop'}]},
 
@@ -131,7 +131,7 @@ export const CHAPTER1_SCENES={
 
 Треба шось робити.`,choices:[{id:'yap_next',label:'Далі',next:'hub'}]},
 
- hub:{...outside,id:'hub',caption:'сільська хитина',hud:img('portrait_base.png'),actors:[hero(),pigeon()],text:s=>`Перед вами сільська хитина, криниця й калюжа на дорозі.
+ hub:{...outside,id:'hub',caption:'сільська хатина',hud:img('portrait_base.png'),actors:[hero(),pigeon()],text:s=>`Перед вами сільська хатина, криниця й калюжа на дорозі.
 
 ${birdCap(s)} теж нікуди не дівся.`,choices:s=>{
   const out=[{id:'hub_well',label:'Піти до криниці.',next:'well',minutes:5,activity:'walk'}];
@@ -221,7 +221,7 @@ ${birdCap(s)} теж нікуди не дівся.`,choices:s=>{
 Він відлітає ще далі.
 
 – Сам іди.`,choices:[{id:'knife_next',label:'До криниці',next:'end'}]},
- end:{...outside,id:'end',caption:'гостинність',hud:img('portrait_base.png'),actors:[hero(),pigeon()],text:`Ви тільки нахиляєтесь до криниці, як двері сільської хитини риплять.
+ end:{...outside,id:'end',caption:'гостинність',hud:img('portrait_base.png'),actors:[hero(),pigeon()],text:`Ви тільки нахиляєтесь до криниці, як двері сільської хатини риплять.
 
 На порозі зʼявляється невисока літня жінка в хустці. Дивиться на вас, потім на Євпапія.
 
@@ -255,11 +255,11 @@ ${birdCap(s)} теж нікуди не дівся.`,choices:s=>{
 
 Баба Галя стоїть спокійно, усміхається й терпляче чекає.
 
-– Ну? Заходити будеш чи при криниці житимеш?
+– Нема шо думати. Синку, заходь. В хаті тепло, сало, вода є. Заходь, заходь.
 
 В голосі ні злості, ні страху. Просто чекає.`,choices:[{id:'watch_enter',label:'Зайти',next:'galinaInside'}]},
 
- galinaInside:{...inside,id:'galinaInside',caption:'сільська хитина',hud:img('portrait_base.png'),actors:[hero(),galina()],onEnter:[{type:'world',key:'location',value:'у хаті баби Галі'},{type:'world',key:'environment',value:'indoors'},{type:'companion',person:'evpapiy',active:false,state:'Лишився надворі'}],text:`У хаті тепло. Піч потріскує, на столі вже стоять хліб, сало, цибуля й глечик води.
+ galinaInside:{...inside,id:'galinaInside',caption:'сільська хатина',hud:img('portrait_base.png'),actors:[hero(),galina()],onEnter:[{type:'world',key:'location',value:'у хаті баби Галі'},{type:'world',key:'environment',value:'indoors'},{type:'companion',person:'evpapiy',active:false,state:'Лишився надворі'}],text:`У хаті тепло. Піч потріскує, на столі вже стоять хліб, сало, цибуля й глечик води.
 
 – Сідай-но, – каже баба Галя. – Їж. Бо вид у тебе недобрий.
 
@@ -362,8 +362,7 @@ ${birdCap(s)} теж нікуди не дівся.`,choices:s=>{
 Баба Галя дивиться на вас без усмішки.
 
 – А криком мертвого піднімеш?
-
-Потім знов береться за посуд.`,choices:[{id:'calm_next',label:'Далі',next:'galinaGarlic'}]},
+`,choices:[{id:'calm_next',label:'Далі',next:'galinaGarlic'}]},
 
  galinaGarlic:{...inside,id:'galinaGarlic',caption:'на дорогу',hud:img('portrait_base.png'),actors:[hero('man_local.png','hutHero'),galina()],text:`Перед тим як ви підводитесь, баба Галя кладе на стіл головку часнику.
 
