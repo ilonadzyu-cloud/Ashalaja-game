@@ -1,16 +1,16 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=054';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=054';
+} from './config.js?v=055';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=055';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=054';
+} from './engine.js?v=055';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=054';
-import {audioManager} from './audio.js?v=054';
+} from './storage.js?v=055';
+import {audioManager} from './audio.js?v=055';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -83,6 +83,7 @@ async function createRun(run){
 
 async function showStart(){
   if(G)await persist();
+  audioManager.setAtmosphere('silent');
   G=null;
   $('#gameScreen').classList.add('hidden');
   $('#startScreen').classList.remove('hidden');
@@ -94,6 +95,7 @@ function showGame(){
   $('#startScreen').classList.add('hidden');
   $('#gameScreen').classList.remove('hidden');
   renderGame();
+  audioManager.setAtmosphere('village');
 }
 
 async function renderStorageStatus(){
@@ -468,6 +470,7 @@ function renderShop(){
 }
 
 
+
 function renderAudio(){
   const root=$('#menuContent');
   const s=audioManager.getSettings();
@@ -475,7 +478,7 @@ function renderAudio(){
 
   root.innerHTML=`
     <div class="section-title"><h2>Звук</h2></div>
-    <p class="explain">На iPhone звук активується тільки після вашого натискання. Після першої взаємодії гра вже може запускати музику, атмосферу й ефекти сама.</p>
+    <p class="explain">На iPhone звук активується після першого натискання. Далі сцени можуть самі перемикати атмосферу й запускати ефекти.</p>
 
     <div class="audio-settings">
       <div class="audio-card">
@@ -495,6 +498,11 @@ function renderAudio(){
           <span id="masterVolumeValue">${pct(s.master)}%</span>
         </div>
         <div class="audio-row">
+          <b>Атмосфера</b>
+          <input id="ambientVolume" type="range" min="0" max="100" value="${pct(s.ambient)}">
+          <span id="ambientVolumeValue">${pct(s.ambient)}%</span>
+        </div>
+        <div class="audio-row">
           <b>Музика</b>
           <input id="musicVolume" type="range" min="0" max="100" value="${pct(s.music)}">
           <span id="musicVolumeValue">${pct(s.music)}%</span>
@@ -504,12 +512,30 @@ function renderAudio(){
           <input id="effectsVolume" type="range" min="0" max="100" value="${pct(s.effects)}">
           <span id="effectsVolumeValue">${pct(s.effects)}%</span>
         </div>
-        <button id="audioTestBtn" class="audio-test">🔊 Перевірити звук</button>
+
+        <div class="audio-note">
+          У самій грі це перемикатиметься автоматично: надворі – село й далекі пси, у хаті – приглушене село + багаття, під дощем – дощ поверх села.
+        </div>
       </div>
 
-      <div class="locked-card">
-        <b>Аудіосистема готова.</b>
-        <div class="small">Справжні звуки села, дощу, Євпапія, сараю й музика підключатимуться окремими файлами разом зі сценами.</div>
+      <div class="audio-card">
+        <b>Перевірити атмосферу</b>
+        <div class="audio-presets">
+          <button data-atmosphere="village">🌾 Село</button>
+          <button data-atmosphere="hut">🔥 Хата + багаття</button>
+          <button data-atmosphere="rain">🌧️ Дощ</button>
+          <button data-atmosphere="silent">🔇 Тиша</button>
+        </div>
+      </div>
+
+      <div class="audio-card">
+        <b>Перевірити ефекти</b>
+        <div class="audio-effects">
+          <button data-sfx="dogs">🐕 Далекі пси</button>
+          <button data-sfx="wings">🪽 Крила Євпапія</button>
+          <button data-sfx="bang">💥 БАХ у сараї</button>
+          <button data-sfx="ui">Клік</button>
+        </div>
       </div>
     </div>
   `;
@@ -531,13 +557,23 @@ function renderAudio(){
   };
 
   bind('#masterVolume','master','#masterVolumeValue');
+  bind('#ambientVolume','ambient','#ambientVolumeValue');
   bind('#musicVolume','music','#musicVolumeValue');
   bind('#effectsVolume','effects','#effectsVolumeValue');
 
-  $('#audioTestBtn').onclick=async()=>{
-    const ok=await audioManager.testEffect();
-    toast(ok?'ЗВУК ПРАЦЮЄ':'ЗВУК НЕ ЗАПУСТИВСЯ',ok?'Аудіосистема активна.':'Спробуйте натиснути ще раз або перевірте, чи звук увімкнений.');
-  };
+  root.querySelectorAll('[data-atmosphere]').forEach(b=>b.onclick=async()=>{
+    const ok=await audioManager.setAtmosphere(b.dataset.atmosphere);
+    if(b.dataset.atmosphere==='silent'){
+      toast('ТИША','Атмосферу вимкнено.');
+    }else{
+      toast(ok?'АТМОСФЕРА ПРАЦЮЄ':'НЕ ЗАПУСТИЛОСЬ',ok?b.textContent:'Спробуйте натиснути ще раз.');
+    }
+  });
+
+  root.querySelectorAll('[data-sfx]').forEach(b=>b.onclick=async()=>{
+    const ok=await audioManager.playEffect(b.dataset.sfx,{volume:0.9});
+    toast(ok?'ЕФЕКТ ПРАЦЮЄ':'НЕ ЗАПУСТИЛОСЬ',ok?b.textContent:'Перевірте, чи звук увімкнений.');
+  });
 }
 
 async function renderSaves(){
@@ -614,6 +650,14 @@ $('#slotPickerOverlay').addEventListener('click',e=>{
     $('#slotPickerOverlay').classList.add('hidden');
     pendingQuickItem=null;
   }
+});
+
+
+document.addEventListener('click',e=>{
+  const button=e.target.closest('button');
+  if(!button)return;
+  if(button.dataset.sfx==='ui')return;
+  audioManager.playEffect('ui',{volume:0.30});
 });
 
 window.addEventListener('pagehide',()=>{if(G)emergencySaveRun(G)});
