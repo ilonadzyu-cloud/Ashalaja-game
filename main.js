@@ -1,16 +1,16 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=055';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=055';
+} from './config.js?v=056';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=056';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=055';
+} from './engine.js?v=056';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=055';
-import {audioManager} from './audio.js?v=055';
+} from './storage.js?v=056';
+import {audioManager} from './audio.js?v=056';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -478,7 +478,7 @@ function renderAudio(){
 
   root.innerHTML=`
     <div class="section-title"><h2>Звук</h2></div>
-    <p class="explain">На iPhone звук активується після першого натискання. Далі сцени можуть самі перемикати атмосферу й запускати ефекти.</p>
+    <p class="explain">На iPhone звук активується після першого натискання. Далі сцени самі перемикатимуть атмосферу й запускатимуть потрібні ефекти.</p>
 
     <div class="audio-settings">
       <div class="audio-card">
@@ -503,18 +503,13 @@ function renderAudio(){
           <span id="ambientVolumeValue">${pct(s.ambient)}%</span>
         </div>
         <div class="audio-row">
-          <b>Музика</b>
-          <input id="musicVolume" type="range" min="0" max="100" value="${pct(s.music)}">
-          <span id="musicVolumeValue">${pct(s.music)}%</span>
-        </div>
-        <div class="audio-row">
           <b>Ефекти</b>
           <input id="effectsVolume" type="range" min="0" max="100" value="${pct(s.effects)}">
           <span id="effectsVolumeValue">${pct(s.effects)}%</span>
         </div>
 
         <div class="audio-note">
-          У самій грі це перемикатиметься автоматично: надворі – село й далекі пси, у хаті – приглушене село + багаття, під дощем – дощ поверх села.
+          Надворі – тихі пташки й рідкі далекі пси. У хаті – приглушений зовнішній фон і багаття. Під дощем – окремий природний запис дощу. Ніяких додаткових свистів чи «страшних» шумів, якщо їх нема в сцені.
         </div>
       </div>
 
@@ -542,8 +537,7 @@ function renderAudio(){
 
   $('#audioToggleBtn').onclick=async()=>{
     const next=!audioManager.getSettings().enabled;
-    audioManager.setEnabled(next);
-    if(next)await audioManager.unlock();
+    await audioManager.setEnabled(next);
     renderAudio();
   };
 
@@ -558,13 +552,12 @@ function renderAudio(){
 
   bind('#masterVolume','master','#masterVolumeValue');
   bind('#ambientVolume','ambient','#ambientVolumeValue');
-  bind('#musicVolume','music','#musicVolumeValue');
   bind('#effectsVolume','effects','#effectsVolumeValue');
 
   root.querySelectorAll('[data-atmosphere]').forEach(b=>b.onclick=async()=>{
     const ok=await audioManager.setAtmosphere(b.dataset.atmosphere);
     if(b.dataset.atmosphere==='silent'){
-      toast('ТИША','Атмосферу вимкнено.');
+      toast('ТИША','Атмосфера плавно затихає.');
     }else{
       toast(ok?'АТМОСФЕРА ПРАЦЮЄ':'НЕ ЗАПУСТИЛОСЬ',ok?b.textContent:'Спробуйте натиснути ще раз.');
     }

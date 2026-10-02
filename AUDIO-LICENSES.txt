@@ -1,0 +1,68 @@
+ДЕСЬ НЕ ТАМ — AUDIO ASSETS / LICENSES
+Version: v0.5.6
+
+У v0.5.6 гра використовує тільки аудіоматеріали, для яких на сторінці джерела
+вказано CC0 1.0 / public-domain dedication. Атрибуція для CC0 не є обов'язковою,
+але джерела збережені тут для перевірки походження.
+
+1) Село / пташки
+Title: Ambient Bird Sounds
+Author: isaiah658
+Source: https://opengameart.org/content/ambient-bird-sounds
+Original: birds-isaiah658.ogg
+License: CC0 1.0
+Runtime mirror: pinned GitHub commit, Terrarium/assets/audio/birds.ogg
+
+2) Багаття
+Title: Fireplace Sound loop
+Author: PagDev
+Source: https://opengameart.org/content/fireplace-sound-loop
+Original: fire.wav
+License: CC0 1.0
+Runtime version: mono Ogg loop derived from the CC0 source, level-matched with a crossfaded seam.
+Runtime mirror: pinned GitHub commit, Terrarium/assets/audio/fire.ogg
+
+3) Дощ
+Title: Rain (loopable)
+Author: Ylmir
+Source: https://opengameart.org/content/rain-loopable
+License: CC0 1.0
+Runtime mirror: pinned GitHub commit, Terrarium/assets/audio/rain.ogg
+
+4) Пси
+Title: Dog barking mono
+Author: Brandon Morris (submitted by HaelDB)
+Source: https://opengameart.org/content/dog-barking-mono
+Original: dog_barking_mono.wav
+License used by this project: CC0 1.0
+Note: source page also offers OGA-BY; this project relies on the CC0 option.
+Runtime mirror: pinned GitHub commit, Friendly-Freya/godot/assets/audio/dog_barking_mono.wav
+
+5) Крила
+Title: Large Wings Flap
+Author: AntumDeluge
+Source: https://opengameart.org/content/large-wings-flap
+Original: wings_flap_large.ogg
+License: CC0 1.0
+Runtime mirror: pinned GitHub commit, GamutoWare/.../wings_flap_large.ogg
+
+6) Удар по дереву / БАХ у сараї
+Pack: Impact Sounds
+Author: Kenney
+Source: https://kenney.nl/assets/impact-sounds
+Original: impactWood_heavy_001.ogg
+License: Creative Commons CC0
+Runtime mirror: pinned GitHub commit, tabletop-club/game/Sounds/WoodHeavy/impactWood_heavy_001.ogg
+
+7) Клік інтерфейсу
+Title: Click
+Author: qubodup
+Source: https://opengameart.org/content/click
+Original: click.wav
+License: CC0 1.0
+Runtime mirror: pinned GitHub commit, DungeonWarrior/src/main/resources/audio/sfx/click.wav
+
+Примітка:
+Синтетичні звуки v0.5.5 більше не використовуються кодом v0.5.6.
+Вони можуть фізично залишатися в репозиторії після оновлення, але жодне посилання
+в audio.js на них не веде.

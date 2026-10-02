@@ -1,26 +1,38 @@
 const SETTINGS_KEY='des-ne-tam-audio-settings-v1';
+const FADE_MS=2200;
 
 const DEFAULTS={
   enabled:true,
   master:0.8,
-  ambient:0.58,
-  music:0.45,
-  effects:0.75
+  ambient:0.48,
+  effects:0.72
+};
+
+// Pinned public mirrors of verified CC0 source material.
+// Exact source/license records are in AUDIO-LICENSES.txt.
+const AUDIO_URLS={
+  village:'https://raw.githubusercontent.com/BrenoBertucci/Terrarium/4a246854926a120616dd1f2ae50da20672886a23/assets/audio/birds.ogg',
+  fireplace:'https://raw.githubusercontent.com/BrenoBertucci/Terrarium/4a246854926a120616dd1f2ae50da20672886a23/assets/audio/fire.ogg',
+  rain:'https://raw.githubusercontent.com/BrenoBertucci/Terrarium/4a246854926a120616dd1f2ae50da20672886a23/assets/audio/rain.ogg',
+  dogs:'https://raw.githubusercontent.com/OlegYazvin/Friendly-Freya/c9a03ccbf847afd576d81a8283f17e7b3635d6e3/godot/assets/audio/dog_barking_mono.wav',
+  wings:'https://raw.githubusercontent.com/moraguma/GamutoWare/55cbf165067c549d2e4a5ec7da6e4b5ce1845988/microjogos/2023S1/projeto_vinicius_carvalho/recursos/sons/wings_flap_large.ogg',
+  bang:'https://raw.githubusercontent.com/drwhut/tabletop-club/a4fb379b0f4af1f066bf378bd652d8be90d64e32/game/Sounds/WoodHeavy/impactWood_heavy_001.ogg',
+  ui:'https://raw.githubusercontent.com/AreOlsen/DungeonWarrior/8a06bc7572344d479446883811572fed7784ca30/src/main/resources/audio/sfx/click.wav'
 };
 
 const ATMOSPHERES={
   silent:{layers:[],dogs:null},
   village:{
-    layers:[['village',0.58]],
-    dogs:{min:14000,max:30000,volume:0.38}
+    layers:[['village',0.42]],
+    dogs:{min:55000,max:120000,volume:0.20}
   },
   hut:{
-    layers:[['village',0.10],['fireplace',0.78]],
-    dogs:{min:28000,max:48000,volume:0.20}
+    layers:[['village',0.06],['fireplace',0.62]],
+    dogs:{min:100000,max:180000,volume:0.08}
   },
   rain:{
-    layers:[['village',0.14],['rain',0.82]],
-    dogs:{min:32000,max:52000,volume:0.14}
+    layers:[['village',0.05],['rain',0.64]],
+    dogs:{min:120000,max:210000,volume:0.06}
   }
 };
 
@@ -37,7 +49,6 @@ function loadSettings(){
       enabled:parsed.enabled!==false,
       master:clamp(parsed.master ?? DEFAULTS.master),
       ambient:clamp(parsed.ambient ?? DEFAULTS.ambient),
-      music:clamp(parsed.music ?? DEFAULTS.music),
       effects:clamp(parsed.effects ?? DEFAULTS.effects)
     };
   }catch{
@@ -54,23 +65,22 @@ class AudioManager{
     this.settings=loadSettings();
     this.ctx=null;
     this.unlocked=false;
-    this.music=null;
-    this.ambientLayers=new Map();
     this.currentAtmosphere='silent';
+    this.ambientLayers=new Map();
+    this.activeEffects=new Map();
     this.dogTimer=null;
 
     this.registry={
-      music:{},
       ambient:{
-        village:'./village-ambient.mp3',
-        fireplace:'./fireplace-loop.mp3',
-        rain:'./rain-loop.mp3'
+        village:AUDIO_URLS.village,
+        fireplace:AUDIO_URLS.fireplace,
+        rain:AUDIO_URLS.rain
       },
       effects:{
-        dogs:'./dogs-distant.mp3',
-        wings:'./pigeon-wings.mp3',
-        bang:'./shed-bang.mp3',
-        ui:'./ui-click.mp3'
+        dogs:{src:AUDIO_URLS.dogs,channel:'ambient'},
+        wings:{src:AUDIO_URLS.wings,channel:'effects'},
+        bang:{src:AUDIO_URLS.bang,channel:'effects'},
+        ui:{src:AUDIO_URLS.ui,channel:'effects'}
       }
     };
   }
@@ -92,82 +102,106 @@ class AudioManager{
     }
   }
 
-  volumeFor(kind,localVolume=1){
+  volumeFor(channel,localVolume=1){
     if(!this.settings.enabled)return 0;
-    const channel=kind==='music'
-      ?this.settings.music
-      :kind==='ambient'
-        ?this.settings.ambient
-        :this.settings.effects;
-    return clamp(this.settings.master*channel*localVolume);
+    const channelVolume=channel==='ambient'
+      ? this.settings.ambient
+      : this.settings.effects;
+    return clamp(this.settings.master*channelVolume*localVolume);
   }
 
-  refreshVolumes(){
-    for(const entry of this.ambientLayers.values()){
-      entry.audio.volume=this.volumeFor('ambient',entry.localVolume);
-    }
-    if(this.music){
-      this.music.audio.volume=this.volumeFor('music',this.music.localVolume);
+  clearFade(entry){
+    if(entry?.fadeTimer){
+      clearInterval(entry.fadeTimer);
+      entry.fadeTimer=null;
     }
   }
 
-  setEnabled(value){
+  fadeEntry(entry,target,ms=FADE_MS,{stopAfter=false,onDone=null}={}){
+    if(!entry?.audio)return;
+    this.clearFade(entry);
+
+    const audio=entry.audio;
+    const from=Number.isFinite(audio.volume)?audio.volume:0;
+    const to=clamp(target);
+    const started=Date.now();
+
+    if(ms<=0||Math.abs(from-to)<0.002){
+      audio.volume=to;
+      if(stopAfter&&to===0){
+        try{audio.pause();audio.currentTime=0}catch{}
+      }
+      if(onDone)onDone();
+      return;
+    }
+
+    entry.fadeTimer=setInterval(()=>{
+      const p=Math.min(1,(Date.now()-started)/ms);
+      audio.volume=clamp(from+(to-from)*p);
+      if(p>=1){
+        this.clearFade(entry);
+        if(stopAfter&&to===0){
+          try{audio.pause();audio.currentTime=0}catch{}
+        }
+        if(onDone)onDone();
+      }
+    },40);
+  }
+
+  async setEnabled(value){
     this.settings.enabled=Boolean(value);
     saveSettings(this.settings);
 
     if(!this.settings.enabled){
       this.stopAll();
-      return;
+      return true;
     }
 
-    this.setAtmosphere(this.currentAtmosphere);
+    const ok=await this.unlock();
+    if(!ok)return false;
+    return this.setAtmosphere(this.currentAtmosphere);
   }
 
   setVolume(kind,value){
-    if(!['master','ambient','music','effects'].includes(kind))return;
+    if(!['master','ambient','effects'].includes(kind))return;
     this.settings[kind]=clamp(value);
     saveSettings(this.settings);
     this.refreshVolumes();
+  }
+
+  refreshVolumes(){
+    for(const entry of this.ambientLayers.values()){
+      this.fadeEntry(entry,this.volumeFor('ambient',entry.localVolume),160);
+    }
+    for(const entry of this.activeEffects.values()){
+      entry.audio.volume=this.volumeFor(entry.channel,entry.localVolume);
+    }
   }
 
   getSettings(){
     return {...this.settings};
   }
 
-  register(kind,id,src){
-    if(!this.registry[kind])return false;
-    this.registry[kind][id]=src;
-    return true;
+  randomizeStart(audio){
+    const apply=()=>{
+      try{
+        if(Number.isFinite(audio.duration)&&audio.duration>6){
+          audio.currentTime=Math.random()*(audio.duration-2);
+        }
+      }catch{}
+    };
+    if(audio.readyState>=1)apply();
+    else audio.addEventListener('loadedmetadata',apply,{once:true});
   }
 
-  async playEffect(id,{volume=1}={}){
-    if(!this.settings.enabled)return false;
-    const ok=await this.unlock();
-    if(!ok)return false;
-
-    const src=this.registry.effects[id];
-    if(!src)return false;
-
-    try{
-      const audio=new Audio(src);
-      audio.preload='auto';
-      audio.volume=this.volumeFor('effects',volume);
-      await audio.play();
-      return true;
-    }catch{
-      return false;
-    }
-  }
-
-  async playAmbientLayer(id,localVolume=1){
-    if(!this.settings.enabled)return false;
+  async ensureAmbientLayer(id,localVolume){
     const src=this.registry.ambient[id];
     if(!src)return false;
 
-    const existing=this.ambientLayers.get(id);
-    if(existing){
-      existing.localVolume=localVolume;
-      existing.audio.volume=this.volumeFor('ambient',localVolume);
+    let entry=this.ambientLayers.get(id);
+    if(entry){
+      entry.localVolume=localVolume;
+      this.fadeEntry(entry,this.volumeFor('ambient',localVolume),FADE_MS);
       return true;
     }
 
@@ -175,27 +209,31 @@ class AudioManager{
       const audio=new Audio(src);
       audio.loop=true;
       audio.preload='auto';
-      audio.volume=this.volumeFor('ambient',localVolume);
+      audio.volume=0;
+      this.randomizeStart(audio);
+
+      entry={audio,localVolume,fadeTimer:null};
+      this.ambientLayers.set(id,entry);
       await audio.play();
-      this.ambientLayers.set(id,{audio,localVolume});
+      this.fadeEntry(entry,this.volumeFor('ambient',localVolume),FADE_MS);
       return true;
     }catch{
+      this.ambientLayers.delete(id);
       return false;
     }
   }
 
-  stopAmbientLayer(id){
+  fadeOutAmbientLayer(id){
     const entry=this.ambientLayers.get(id);
     if(!entry)return;
-    try{
-      entry.audio.pause();
-      entry.audio.currentTime=0;
-    }catch{}
-    this.ambientLayers.delete(id);
-  }
-
-  stopAmbient(){
-    for(const id of [...this.ambientLayers.keys()])this.stopAmbientLayer(id);
+    this.fadeEntry(entry,0,FADE_MS,{
+      stopAfter:true,
+      onDone:()=>{
+        if(this.ambientLayers.get(id)===entry){
+          this.ambientLayers.delete(id);
+        }
+      }
+    });
   }
 
   clearDogTimer(){
@@ -209,7 +247,8 @@ class AudioManager{
     this.clearDogTimer();
     if(!config||!this.settings.enabled)return;
 
-    const tick=()=>{
+    const scheduleNext=()=>{
+      if(!this.settings.enabled)return;
       const wait=Math.floor(config.min+Math.random()*(config.max-config.min));
       this.dogTimer=setTimeout(async()=>{
         if(
@@ -219,66 +258,108 @@ class AudioManager{
         ){
           await this.playEffect('dogs',{volume:config.volume});
         }
-        tick();
+        scheduleNext();
       },wait);
     };
 
-    tick();
+    scheduleNext();
   }
 
   async setAtmosphere(name='silent'){
     const profile=ATMOSPHERES[name]||ATMOSPHERES.silent;
     this.currentAtmosphere=name;
     this.clearDogTimer();
-    this.stopAmbient();
 
-    if(!this.settings.enabled||name==='silent')return true;
+    const wanted=new Map(profile.layers);
+    for(const id of [...this.ambientLayers.keys()]){
+      if(!wanted.has(id))this.fadeOutAmbientLayer(id);
+    }
+
+    if(!this.settings.enabled||name==='silent'){
+      return true;
+    }
+
     const ok=await this.unlock();
     if(!ok)return false;
 
     let started=false;
     for(const [id,volume] of profile.layers){
-      const layerOk=await this.playAmbientLayer(id,volume);
+      const layerOk=await this.ensureAmbientLayer(id,volume);
       started=started||layerOk;
     }
+
     this.scheduleDogs(profile.dogs);
     return started;
   }
 
-  async playMusic(id,{volume=1}={}){
+  async playEffect(id,{volume=1,allowOverlap=false}={}){
     if(!this.settings.enabled)return false;
-    const src=this.registry.music[id];
-    if(!src)return false;
+
+    const def=this.registry.effects[id];
+    if(!def)return false;
+
+    const existing=this.activeEffects.get(id);
+    if(existing&&!allowOverlap&&!existing.audio.paused&&!existing.audio.ended){
+      return true;
+    }
+
     const ok=await this.unlock();
     if(!ok)return false;
 
-    this.stopMusic();
     try{
-      const audio=new Audio(src);
-      audio.loop=true;
+      const audio=new Audio(def.src);
       audio.preload='auto';
-      audio.volume=this.volumeFor('music',volume);
+
+      const entry={
+        audio,
+        channel:def.channel||'effects',
+        localVolume:volume
+      };
+
+      audio.volume=this.volumeFor(entry.channel,entry.localVolume);
+
+      const cleanup=()=>{
+        if(this.activeEffects.get(id)===entry){
+          this.activeEffects.delete(id);
+        }
+      };
+      audio.addEventListener('ended',cleanup,{once:true});
+      audio.addEventListener('error',cleanup,{once:true});
+
+      this.activeEffects.set(id,entry);
       await audio.play();
-      this.music={audio,localVolume:volume};
       return true;
     }catch{
+      this.activeEffects.delete(id);
       return false;
     }
   }
 
-  stopMusic(){
-    if(!this.music)return;
-    try{
-      this.music.audio.pause();
-      this.music.audio.currentTime=0;
-    }catch{}
-    this.music=null;
+  stopEffects(){
+    for(const entry of this.activeEffects.values()){
+      try{
+        entry.audio.pause();
+        entry.audio.currentTime=0;
+      }catch{}
+    }
+    this.activeEffects.clear();
+  }
+
+  stopAmbientNow(){
+    for(const entry of this.ambientLayers.values()){
+      this.clearFade(entry);
+      try{
+        entry.audio.pause();
+        entry.audio.currentTime=0;
+      }catch{}
+    }
+    this.ambientLayers.clear();
   }
 
   stopAll(){
     this.clearDogTimer();
-    this.stopAmbient();
-    this.stopMusic();
+    this.stopEffects();
+    this.stopAmbientNow();
   }
 
   async testEffect(){
