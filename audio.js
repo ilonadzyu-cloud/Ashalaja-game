@@ -1,5 +1,5 @@
 const SETTINGS_KEY='des-ne-tam-audio-settings-v1';
-const FADE_MS=2200;
+const FADE_MS=700;
 
 const DEFAULTS={
   enabled:true,
@@ -13,7 +13,7 @@ const DEFAULTS={
 const AUDIO_URLS={
   village:'https://raw.githubusercontent.com/BrenoBertucci/Terrarium/4a246854926a120616dd1f2ae50da20672886a23/assets/audio/birds.ogg',
   fireplace:'https://raw.githubusercontent.com/BrenoBertucci/Terrarium/4a246854926a120616dd1f2ae50da20672886a23/assets/audio/fire.ogg',
-  rain:'https://raw.githubusercontent.com/BrenoBertucci/Terrarium/4a246854926a120616dd1f2ae50da20672886a23/assets/audio/rain.ogg',
+  rain:'https://raw.githubusercontent.com/Julian-adv/OpenMMO/34840966d089d26e2114667227dbc791e912866f/client/public/sounds/rain-loop.ogg',
   dogs:'https://raw.githubusercontent.com/OlegYazvin/Friendly-Freya/c9a03ccbf847afd576d81a8283f17e7b3635d6e3/godot/assets/audio/dog_barking_mono.wav',
   wings:'https://raw.githubusercontent.com/moraguma/GamutoWare/55cbf165067c549d2e4a5ec7da6e4b5ce1845988/microjogos/2023S1/projeto_vinicius_carvalho/recursos/sons/wings_flap_large.ogg',
   bang:'https://raw.githubusercontent.com/drwhut/tabletop-club/a4fb379b0f4af1f066bf378bd652d8be90d64e32/game/Sounds/WoodHeavy/impactWood_heavy_001.ogg',
@@ -86,7 +86,7 @@ class AudioManager{
   }
 
   async unlock(){
-    if(this.unlocked)return true;
+    if(this.unlocked&&this.ctx?.state==='running')return true;
     try{
       const Ctx=window.AudioContext||window.webkitAudioContext;
       if(Ctx){
@@ -100,6 +100,34 @@ class AudioManager{
     }catch{
       return false;
     }
+  }
+
+  connectAudio(audio){
+    if(!this.ctx)return null;
+    try{
+      const source=this.ctx.createMediaElementSource(audio);
+      const gain=this.ctx.createGain();
+      gain.gain.value=0;
+      source.connect(gain);
+      gain.connect(this.ctx.destination);
+      return {source,gain};
+    }catch{
+      return null;
+    }
+  }
+
+  entryLevel(entry){
+    if(entry?.gain)return Number(entry.gain.gain.value)||0;
+    return Number.isFinite(entry?.audio?.volume)?entry.audio.volume:0;
+  }
+
+  setEntryLevel(entry,value){
+    const v=clamp(value);
+    if(entry?.gain){
+      entry.gain.gain.value=v;
+      return;
+    }
+    if(entry?.audio)entry.audio.volume=v;
   }
 
   volumeFor(channel,localVolume=1){
@@ -122,12 +150,12 @@ class AudioManager{
     this.clearFade(entry);
 
     const audio=entry.audio;
-    const from=Number.isFinite(audio.volume)?audio.volume:0;
+    const from=this.entryLevel(entry);
     const to=clamp(target);
     const started=Date.now();
 
     if(ms<=0||Math.abs(from-to)<0.002){
-      audio.volume=to;
+      this.setEntryLevel(entry,to);
       if(stopAfter&&to===0){
         try{audio.pause();audio.currentTime=0}catch{}
       }
@@ -137,7 +165,7 @@ class AudioManager{
 
     entry.fadeTimer=setInterval(()=>{
       const p=Math.min(1,(Date.now()-started)/ms);
-      audio.volume=clamp(from+(to-from)*p);
+      this.setEntryLevel(entry,from+(to-from)*p);
       if(p>=1){
         this.clearFade(entry);
         if(stopAfter&&to===0){
@@ -170,11 +198,25 @@ class AudioManager{
   }
 
   refreshVolumes(){
-    for(const entry of this.ambientLayers.values()){
-      this.fadeEntry(entry,this.volumeFor('ambient',entry.localVolume),160);
+    for(const [id,entry] of this.ambientLayers.entries()){
+      // Важливо: доріжка, яка вже вимикається, не повинна оживати,
+      // якщо користувач у цей момент рухає регулятор гучності.
+      if(entry.retiring){
+        this.fadeEntry(entry,0,160,{
+          stopAfter:true,
+          onDone:()=>{
+            if(this.ambientLayers.get(id)===entry){
+              this.ambientLayers.delete(id);
+            }
+          }
+        });
+      }else{
+        this.fadeEntry(entry,this.volumeFor('ambient',entry.localVolume),160);
+      }
     }
+
     for(const entry of this.activeEffects.values()){
-      entry.audio.volume=this.volumeFor(entry.channel,entry.localVolume);
+      this.setEntryLevel(entry,this.volumeFor(entry.channel,entry.localVolume));
     }
   }
 
@@ -201,18 +243,31 @@ class AudioManager{
     let entry=this.ambientLayers.get(id);
     if(entry){
       entry.localVolume=localVolume;
+      entry.retiring=false;
       this.fadeEntry(entry,this.volumeFor('ambient',localVolume),FADE_MS);
       return true;
     }
 
     try{
-      const audio=new Audio(src);
+      const audio=new Audio();
+      audio.crossOrigin='anonymous';
+      audio.src=src;
       audio.loop=true;
       audio.preload='auto';
-      audio.volume=0;
+
+      const graph=this.connectAudio(audio);
+      if(graph)audio.volume=1;
+      else audio.volume=0;
       this.randomizeStart(audio);
 
-      entry={audio,localVolume,fadeTimer:null};
+      entry={
+        audio,
+        gain:graph?.gain||null,
+        source:graph?.source||null,
+        localVolume,
+        fadeTimer:null,
+        retiring:false
+      };
       this.ambientLayers.set(id,entry);
       await audio.play();
       this.fadeEntry(entry,this.volumeFor('ambient',localVolume),FADE_MS);
@@ -226,6 +281,7 @@ class AudioManager{
   fadeOutAmbientLayer(id){
     const entry=this.ambientLayers.get(id);
     if(!entry)return;
+    entry.retiring=true;
     this.fadeEntry(entry,0,FADE_MS,{
       stopAfter:true,
       onDone:()=>{
@@ -253,7 +309,7 @@ class AudioManager{
       this.dogTimer=setTimeout(async()=>{
         if(
           this.settings.enabled &&
-          this.currentAtmosphere!=='silent' &&
+          this.currentAtmosphere==='village' &&
           document.visibilityState!=='hidden'
         ){
           await this.playEffect('dogs',{volume:config.volume});
@@ -307,16 +363,23 @@ class AudioManager{
     if(!ok)return false;
 
     try{
-      const audio=new Audio(def.src);
+      const audio=new Audio();
+      audio.crossOrigin='anonymous';
+      audio.src=def.src;
       audio.preload='auto';
+
+      const graph=this.connectAudio(audio);
+      if(graph)audio.volume=1;
 
       const entry={
         audio,
+        gain:graph?.gain||null,
+        source:graph?.source||null,
         channel:def.channel||'effects',
         localVolume:volume
       };
 
-      audio.volume=this.volumeFor(entry.channel,entry.localVolume);
+      this.setEntryLevel(entry,this.volumeFor(entry.channel,entry.localVolume));
 
       const cleanup=()=>{
         if(this.activeEffects.get(id)===entry){

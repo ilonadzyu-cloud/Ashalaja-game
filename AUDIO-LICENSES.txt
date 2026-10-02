@@ -1,7 +1,7 @@
 ДЕСЬ НЕ ТАМ — AUDIO ASSETS / LICENSES
-Version: v0.5.6
+Version: v0.5.8
 
-У v0.5.6 гра використовує тільки аудіоматеріали, для яких на сторінці джерела
+У v0.5.8 гра використовує тільки аудіоматеріали, для яких на сторінці джерела
 вказано CC0 1.0 / public-domain dedication. Атрибуція для CC0 не є обов'язковою,
 але джерела збережені тут для перевірки походження.
 
@@ -23,11 +23,12 @@ Runtime version: mono Ogg loop derived from the CC0 source, level-matched with a
 Runtime mirror: pinned GitHub commit, Terrarium/assets/audio/fire.ogg
 
 3) Дощ
-Title: Rain (loopable)
-Author: Ylmir
-Source: https://opengameart.org/content/rain-loopable
+Title: AMB Rain Loop 2
+Author: Kresiek The Furry
+Source: https://opengameart.org/content/amb-rain-loop-2
 License: CC0 1.0
-Runtime mirror: pinned GitHub commit, Terrarium/assets/audio/rain.ogg
+Runtime version: спокійний фрагмент реального зовнішнього запису дощу, зроблений безшовним коротким self-crossfade.
+Runtime mirror: pinned GitHub commit, OpenMMO/client/public/sounds/rain-loop.ogg
 
 4) Пси
 Title: Dog barking mono
@@ -63,6 +64,6 @@ License: CC0 1.0
 Runtime mirror: pinned GitHub commit, DungeonWarrior/src/main/resources/audio/sfx/click.wav
 
 Примітка:
-Синтетичні звуки v0.5.5 більше не використовуються кодом v0.5.6.
+Синтетичні звуки v0.5.5 більше не використовуються кодом v0.5.8.
 Вони можуть фізично залишатися в репозиторії після оновлення, але жодне посилання
 в audio.js на них не веде.

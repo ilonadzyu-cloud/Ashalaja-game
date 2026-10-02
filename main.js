@@ -1,22 +1,74 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=057';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=057';
+} from './config.js?v=058';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=058';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=057';
+} from './engine.js?v=058';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=057';
-import {audioManager} from './audio.js?v=057';
+} from './storage.js?v=058';
+import {audioManager} from './audio.js?v=058';
 
 const $=s=>document.querySelector(s);
 let G=null;
 let currentTab='inventory';
 let pendingQuickItem=null;
 let toastTimer=null;
+
+function howToCards(){
+  return `
+    <div class="howto-grid">
+      <article class="howto-card howto-lead">
+        <h2>Кожне ваше рішення має значення.</h2>
+        <p>Вибір може змінити стан героя, вплинути на ставлення до вас або вилізти боком значно пізніше. Не все корисне виявиться добрим, а не кожна хуйова ідея закінчиться хуйово.</p>
+        <p>Стани й характеристики можуть відкривати нові варіанти в діалогах і діях.</p>
+        <p>Будьте обережні – не все те, чим здається.</p>
+      </article>
+
+      <article class="howto-card">
+        <h2>Стани</h2>
+        <p>Стани змінюють характеристики героя. Деякі можна зняти. Деякі самі пройдуть. А деякі будуть з вами, поки ви не розгребете ту хуйню, яку наробили.</p>
+      </article>
+
+      <article class="howto-card">
+        <h2>Характеристики</h2>
+        <p>Сила, уважність, спритність, харизма й інші характеристики ростуть по ходу гри. Вони впливають на перевірки й інколи відкривають варіанти, яких ви інакше навіть не побачите.</p>
+      </article>
+
+      <article class="howto-card">
+        <h2>Інвентар і виживання</h2>
+        <p>Їжа, вода, бадьорість, здоровʼя, мокрий одяг і речі в кишенях – це не декор. Те, що ви взяли, зʼїли, вдягнули або лишили лежати, може знадобитися далеко не одразу.</p>
+      </article>
+    </div>
+  `;
+}
+
+function showHowToIntro(){
+  $('#startScreen').classList.add('hidden');
+  $('#gameScreen').classList.add('hidden');
+  $('#howToScreen').classList.remove('hidden');
+  $('#howToIntroCards').innerHTML=howToCards();
+  audioManager.setAtmosphere('silent');
+}
+
+async function beginFromHowTo(){
+  if(!G)return;
+  await persist();
+  $('#howToScreen').classList.add('hidden');
+  showGame();
+}
+
+function renderHowTo(){
+  const root=$('#menuContent');
+  root.innerHTML=`
+    <div class="section-title"><h2>Як грати</h2></div>
+    <p class="explain">Той самий вступ із початку нової гри. Можна перечитати, якщо вже забули, шо тут до чого.</p>
+    ${howToCards()}
+  `;
+}
 
 function toast(title,body=''){
   const el=$('#toast');
@@ -78,7 +130,7 @@ async function createRun(run){
   await clearRun(run);
   G=createInitialState(run);
   await saveRun(G);
-  showGame();
+  showHowToIntro();
 }
 
 async function showStart(){
@@ -86,6 +138,7 @@ async function showStart(){
   audioManager.setAtmosphere('silent');
   G=null;
   $('#gameScreen').classList.add('hidden');
+  $('#howToScreen').classList.add('hidden');
   $('#startScreen').classList.remove('hidden');
   $('#runPicker').classList.add('hidden');
   await renderStorageStatus();
@@ -93,6 +146,7 @@ async function showStart(){
 
 function showGame(){
   $('#startScreen').classList.add('hidden');
+  $('#howToScreen').classList.add('hidden');
   $('#gameScreen').classList.remove('hidden');
   renderGame();
   audioManager.setAtmosphere('village');
@@ -243,6 +297,7 @@ function renderMenu(){
   if(currentTab==='map')renderMap();
   if(currentTab==='shop')renderShop();
   if(currentTab==='audio')renderAudio();
+  if(currentTab==='howto')renderHowTo();
   if(currentTab==='saves')renderSaves();
 }
 
@@ -620,6 +675,7 @@ $('#continueBtn').onclick=()=>{
     $('#runPicker').innerHTML='<div class="run-card"><b>Не вдалося прочитати сейви.</b></div>';
   });
 };
+$('#beginGameBtn').onclick=()=>{ audioManager.unlock(); beginFromHowTo().catch(console.error); };
 $('#menuBtn').onclick=()=>{ audioManager.unlock(); openMenu(); };
 $('#exitBtn').onclick=showStart;
 $('#closeMenuBtn').onclick=closeMenu;

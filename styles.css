@@ -186,7 +186,6 @@ button.danger{background:#472927;border-color:#71413d;color:#f1c6c1;font-weight:
 button.danger:hover{background:#59302d}
 @media(max-width:520px){.confirm-actions{grid-template-columns:1fr}}
 
-
 .audio-settings{display:grid;gap:12px}
 .audio-card{
   border:1px solid var(--line);border-radius:13px;background:#111813;padding:12px
@@ -206,7 +205,6 @@ button.danger:hover{background:#59302d}
 @media(max-width:520px){
   .audio-row{grid-template-columns:1fr}
 }
-
 
 .companion-section{margin-top:15px}
 .companion-section h3{
@@ -234,11 +232,44 @@ button.danger:hover{background:#59302d}
   .companions-grid{grid-template-columns:1fr}
 }
 
-
 .audio-presets,.audio-effects{
   display:flex;flex-wrap:wrap;gap:7px;margin-top:10px
 }
 .audio-note{
   margin-top:10px;padding:10px;border-radius:10px;background:#0d130f;
   border:1px solid #263128;color:var(--muted);font-size:12px;line-height:1.45
+}
+
+/* Вступ / довідка */
+.howto-screen{display:block;min-height:100vh;padding-top:22px}
+.howto-wrap{width:min(820px,100%);margin:0 auto}
+.howto-head{position:relative;margin-bottom:18px}
+.howto-version{position:absolute;right:0;top:4px;font-size:11px;color:var(--muted);letter-spacing:.08em}
+.howto-title{margin:8px 0 12px}
+.howto-kicker{
+  margin-top:18px;font-size:10px;letter-spacing:.14em;color:var(--accent);
+  font-weight:900;text-transform:uppercase
+}
+.howto-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.howto-card{
+  background:rgba(17,23,18,.97);border:1px solid #364239;border-radius:18px;
+  padding:18px 20px
+}
+.howto-card.howto-lead{grid-column:1/-1}
+.howto-card h2{margin:0 0 9px;font-size:18px;line-height:1.25}
+.howto-card p{margin:0;font-size:15px;line-height:1.62;color:#e1dbcf}
+.howto-card p+p{margin-top:14px}
+.howto-start{margin-top:14px}
+.howto-start button{width:100%;min-height:52px}
+.menu-content .howto-grid{grid-template-columns:1fr}
+.menu-content .howto-card.howto-lead{grid-column:auto}
+
+@media(max-width:640px){
+  .howto-screen{padding:12px 10px 48px}
+  .howto-grid{grid-template-columns:1fr;gap:10px}
+  .howto-card.howto-lead{grid-column:auto}
+  .howto-card{padding:16px 17px;border-radius:17px}
+  .howto-card h2{font-size:17px}
+  .howto-card p{font-size:15px;line-height:1.65}
+  .howto-version{top:2px}
 }
