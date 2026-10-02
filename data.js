@@ -1,5 +1,12 @@
 export const STATUS_DEFS={
-  hangover:{name:'ЖОСТКИЙ БУДУНЯРА',blurb:'Бувало і краще.',mods:{attention:-2,agility:-1,pofigism:2},remove:'поїсти, попити й трохи прийти до тями.'},
+  hangover:{
+    name:'ЖОСТКИЙ БУДУНЯРА',
+    blurb:'Бувало і краще.',
+    mods:{attention:-2,agility:-1,pofigism:2},
+    drainMultipliers:{water:1.25},
+    extraEffects:['Вода витрачається на 25% швидше.'],
+    remove:'поїсти, попити й трохи прийти до тями.'
+  },
   pigeonHumiliated:{name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',blurb:'Ну буває.',mods:{charisma:-1,pofigism:1},remove:'помитись або змінити обісрану одежину.'},
   dryMouth:{name:'СУШНЯК',blurb:'Сушить.',mods:{attention:-1},remove:'попити.'},
   yebatorium:{name:'ОСТАНОВОЧКА ЄБАТОРІУМ',blurb:'Після такого ви вже готові перевіряти будь-яку хуйню.',mods:{attention:1,pofigism:1,ahui:1},remove:'сам пройде.',persistentUnlock:'yebatorium'},

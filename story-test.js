@@ -1,7 +1,8 @@
+import {itemCount} from './engine.js';
+
 /*
   Правило сюжетних вузлів:
   після вибору текст повинен відповідати САМЕ зробленій дії.
-  Не пишемо спільний текст, який припускає питання, якщо гравець просто дивився.
   Кілька пасивних шматків тексту обʼєднуємо до наступного реального рішення.
 */
 export function coreActions(state){
@@ -20,9 +21,7 @@ export function coreActions(state){
       id:'ask_legend',
       title:'Спитати жінку, шо значить «місцева лєгенда».',
       minutes:0,
-      hiddenEffects:[
-        {type:'relationship',person:'evpapiy',key:'offense',value:1}
-      ],
+      hiddenEffects:[{type:'relationship',person:'evpapiy',key:'offense',value:1}],
       afterText:'Жінка вже відкриває рот, але її гукають від столу. Вона відмахується й киває вам на лавку.'
     },
     {
@@ -48,16 +47,6 @@ export function coreActions(state){
       afterText:'Боляче рівно настільки, щоб ви ще раз згадали, яка він падла.'
     },
     {
-      id:'salo_social',
-      title:'Дати Євпапію сало.',
-      minutes:0,
-      hiddenEffects:[
-        {type:'relationship',person:'evpapiy',key:'trust',value:2},
-        {type:'relationship',person:'evpapiy',key:'offense',value:-1}
-      ],
-      afterText:'Євпапій сало взяв. По морді хуй поймеш, вдячний він чи просто вважає це належним.'
-    },
-    {
       id:'unlock_yeb',
       title:'Отримати «ОСТАНОВОЧКА ЄБАТОРІУМ».',
       minutes:0,
@@ -72,6 +61,23 @@ export function coreActions(state){
       afterText:'Трохи відпочили.'
     }
   ];
+
+  // Сало є реальною річчю: дія доступна тільки якщо воно є,
+  // витрачає 1 шматок і бонус стосунків за цю сцену не фармиться повторно.
+  if(itemCount(state,'salo')>0 && !state.flags.evpapiySaloGiven){
+    actions.splice(5,0,{
+      id:'salo_social',
+      title:'Дати Євпапію сало.',
+      minutes:0,
+      hiddenEffects:[
+        {type:'itemRemove',id:'salo',qty:1},
+        {type:'relationship',person:'evpapiy',key:'trust',value:2},
+        {type:'relationship',person:'evpapiy',key:'offense',value:-1},
+        {type:'flag',key:'evpapiySaloGiven',value:true}
+      ],
+      afterText:'Євпапій сало взяв. По морді хуй поймеш, вдячний він чи просто вважає це належним.'
+    });
+  }
 
   if(state.unlocks.yebatorium){
     actions.splice(actions.length-1,0,{

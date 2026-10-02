@@ -6,9 +6,9 @@ export const clone=x=>JSON.parse(JSON.stringify(x));
 
 export function createInitialState(runId=1){
   const stats={};
-  for(const key of STAT_KEYS) stats[key]={level:1,progress:0};
+  for(const key of STAT_KEYS)stats[key]={level:1,progress:0};
   return {
-    schemaVersion:3,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
+    schemaVersion:4,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
     chapter:'core-test',scene:'sandbox',clock:{totalMinutes:420},
     health:100,needs:{satiety:80,water:75,energy:78},wetness:0,
     stats,activeStatuses:['hangover'],discoveredStatuses:['hangover'],unlocks:{yebatorium:false},
@@ -16,15 +16,9 @@ export function createInitialState(runId=1){
     ownedClothes:['local_shirt','local_jacket','boots','sheepskin','leather_vest'],
     equipment:{body:'local_shirt',outer:'local_jacket',feet:'boots'},
     relationships:{
-      evpapiy:{
-        name:'Євпапій',known:true,
-        values:{trust:2,offense:0,greed:5,bullshit:7},
-        discoveredParams:[]
-      }
+      evpapiy:{name:'Євпапій',known:true,values:{trust:2,offense:0,greed:5,bullshit:7},discoveredParams:[]}
     },
-    money:0,flags:{},
-    hazards:{dynamic:{}},
-    audit:[],
+    money:0,flags:{},hazards:{dynamic:{}},audit:[],
     world:{weather:{label:'Хмарно',icon:'☁️',tempC:16,wind:1,rain:0},location:'test-yard',environment:'outdoors'}
   };
 }
@@ -36,50 +30,59 @@ export function formatTime(total){
 
 export function equipmentTotals(state){
   const out={armor:0,warmth:0,heatBurden:0,rainProtection:0};
-  for(const id of Object.values(state.equipment)){
-    const d=CLOTHES[id]; if(!d) continue;
-    for(const k of Object.keys(out)) out[k]+=Number(d[k]||0);
+  for(const id of Object.values(state.equipment||{})){
+    const d=CLOTHES[id];if(!d)continue;
+    for(const k of Object.keys(out))out[k]+=Number(d[k]||0);
   }
   return out;
 }
 
 export function equip(state,id){
   const d=CLOTHES[id];
-  if(!d||!state.ownedClothes.includes(id)) return false;
+  if(!d||!state.ownedClothes.includes(id))return false;
   state.equipment[d.slot]=id;
   return true;
 }
 
 export function statModifiers(state){
   const out=Object.fromEntries(STAT_KEYS.map(k=>[k,0]));
-  for(const id of state.activeStatuses){
+  for(const id of state.activeStatuses||[]){
     const d=STATUS_DEFS[id];
-    if(d?.mods) for(const [k,v] of Object.entries(d.mods)) if(k in out) out[k]+=Number(v||0);
+    if(d?.mods)for(const [k,v] of Object.entries(d.mods))if(k in out)out[k]+=Number(v||0);
   }
-  for(const id of Object.values(state.equipment)){
+  for(const id of Object.values(state.equipment||{})){
     const d=CLOTHES[id];
-    if(d?.statMods) for(const [k,v] of Object.entries(d.statMods)) if(k in out) out[k]+=Number(v||0);
+    if(d?.statMods)for(const [k,v] of Object.entries(d.statMods))if(k in out)out[k]+=Number(v||0);
   }
   return out;
 }
 
+export function effectiveStat(state,key){
+  const base=Number(state.stats?.[key]?.level||0);
+  const mod=Number(statModifiers(state)[key]||0);
+  return clamp(base+mod,0,10);
+}
+
 export function addStatProgress(state,key,value){
-  if(!STAT_KEYS.includes(key)) return [];
+  if(!STAT_KEYS.includes(key))return[];
   const events=[],s=state.stats[key];
   s.progress=Math.max(0,s.progress+value);
-  while(s.progress>=10){s.progress-=10;s.level++;events.push({type:'levelUp',key,level:s.level,visible:false})}
+  while(s.progress>=10){
+    s.progress-=10;s.level++;
+    events.push({type:'levelUp',key,level:s.level,visible:false});
+  }
   return events;
 }
 
 export function addStatus(state,id){
-  const d=STATUS_DEFS[id]; if(!d) return [];
+  const d=STATUS_DEFS[id];if(!d)return[];
   const events=[];
   if(!state.activeStatuses.includes(id)){
     state.activeStatuses.push(id);
     events.push({type:'statusAdded',id,visible:false});
   }
-  if(!state.discoveredStatuses.includes(id)) state.discoveredStatuses.push(id);
-  if(d.persistentUnlock) state.unlocks[d.persistentUnlock]=true;
+  if(!state.discoveredStatuses.includes(id))state.discoveredStatuses.push(id);
+  if(d.persistentUnlock)state.unlocks[d.persistentUnlock]=true;
   return events;
 }
 
@@ -87,6 +90,22 @@ export function removeStatus(state,id){
   const had=state.activeStatuses.includes(id);
   state.activeStatuses=state.activeStatuses.filter(x=>x!==id);
   return had?[{type:'statusRemoved',id,visible:false}]:[];
+}
+
+export function itemCount(state,id){
+  return (state.inventory||[]).filter(x=>x.id===id).reduce((n,x)=>n+Number(x.qty||0),0);
+}
+
+export function removeItem(state,id,qty=1){
+  let left=qty;
+  for(let i=(state.inventory||[]).length-1;i>=0&&left>0;i--){
+    const slot=state.inventory[i];
+    if(slot.id!==id)continue;
+    const take=Math.min(left,slot.qty);
+    slot.qty-=take;left-=take;
+    if(slot.qty<=0)state.inventory.splice(i,1);
+  }
+  return left===0;
 }
 
 export function thermal(state){
@@ -119,32 +138,37 @@ function syncEnvironmentalHazards(state,damageSources){
 }
 
 export function threatInfo(state){
-  if(state.health<=15) return {key:'critical',label:'КРИТИЧНА',reason:'критично низьке здоровʼя'};
-  if(state.health<=45) return {key:'high',label:'ВИСОКА',reason:'низьке здоровʼя'};
-
+  if(state.health<=15)return{key:'critical',label:'КРИТИЧНА',reason:'критично низьке здоровʼя'};
+  if(state.health<=45)return{key:'high',label:'ВИСОКА',reason:'низьке здоровʼя'};
   const hazards=Object.values(state.hazards?.dynamic||{});
   const high=hazards.find(h=>h.level==='high'||h.level==='critical');
-  if(high) return {key:'high',label:'ВИСОКА',reason:high.reason};
+  if(high)return{key:'high',label:'ВИСОКА',reason:high.reason};
   const med=hazards.find(h=>h.level==='medium');
-  if(med) return {key:'medium',label:'СЕРЕДНЯ',reason:med.reason};
-
-  return {key:'low',label:'НИЗЬКА',reason:'прямої небезпеки нема'};
+  if(med)return{key:'medium',label:'СЕРЕДНЯ',reason:med.reason};
+  return{key:'low',label:'НИЗЬКА',reason:'прямої небезпеки нема'};
 }
 
 function recordAudit(state,actionId,event){
+  state.audit=state.audit||[];
   state.audit.push({
-    at:state.clock.totalMinutes,
-    actionId:actionId||'unknown',
-    type:event.type,
-    key:event.key||event.id||event.person||null,
-    source:event.source||actionId||null,
-    actual:event.actual??event.value??null
+    at:state.clock.totalMinutes,actionId:actionId||'unknown',
+    type:event.type,key:event.key||event.id||event.person||null,
+    source:event.source||actionId||null,actual:event.actual??event.value??null
   });
   if(state.audit.length>120)state.audit.splice(0,state.audit.length-120);
 }
 
+function activeDrainMultiplier(state,key){
+  let mult=1;
+  for(const id of state.activeStatuses||[]){
+    const m=STATUS_DEFS[id]?.drainMultipliers?.[key];
+    if(m)mult*=Number(m);
+  }
+  return mult;
+}
+
 function timeCost(state,minutes,activity){
-  if(minutes<=0)return {needs:{satiety:0,water:0,energy:0},wetness:0,health:0,damageSources:new Set()};
+  if(minutes<=0)return{needs:{satiety:0,water:0,energy:0},wetness:0,health:0,damageSources:new Set()};
   const unit=minutes/10,t=thermal(state),eq=t.eq;
   const table={
     light:{satiety:-.35,water:-.7,energy:-.4},
@@ -155,13 +179,19 @@ function timeCost(state,minutes,activity){
   };
   const b=table[activity]||table.light;
   const needs={satiety:b.satiety*unit,water:b.water*unit,energy:b.energy*unit};
+
   needs.water-=t.heatLevel*.7*unit;
   needs.energy-=t.coldLevel*.7*unit;
   needs.satiety-=t.coldLevel*.35*unit;
 
+  // Стани можуть прискорювати витрату конкретної потреби.
+  for(const key of ['satiety','water','energy']){
+    if(needs[key]<0)needs[key]*=activeDrainMultiplier(state,key);
+  }
+
   const wetness=state.world.weather.rain>0
-    ? state.world.weather.rain*4*unit*(1-clamp(eq.rainProtection*.16,0,.8))
-    : -3*unit;
+    ?state.world.weather.rain*4*unit*(1-clamp(eq.rainProtection*.16,0,.8))
+    :-3*unit;
 
   let health=0;
   const damageSources=new Set();
@@ -170,7 +200,7 @@ function timeCost(state,minutes,activity){
   if(state.needs.energy<=0){health-=1*unit;damageSources.add('exhaustion')}
   if(t.coldLevel===3){health-=.6*unit;damageSources.add('cold')}
   if(t.heatLevel===3){health-=.6*unit;damageSources.add('heat')}
-  return {needs,wetness,health,damageSources};
+  return{needs,wetness,health,damageSources};
 }
 
 function applyDamage(state,e){
@@ -179,7 +209,7 @@ function applyDamage(state,e){
     ?Math.min(raw,equipmentTotals(state).armor):0;
   const final=Math.max(0,raw-blocked);
   state.health=clamp(state.health-final,0,100);
-  return {final,blocked};
+  return{final,blocked};
 }
 
 function applyEffect(state,e,events){
@@ -202,8 +232,7 @@ function applyEffect(state,e,events){
   }else if(e.type==='statusRemove'){
     events.push(...removeStatus(state,e.id));
   }else if(e.type==='relationship'){
-    const rel=state.relationships[e.person];
-    if(!rel)return;
+    const rel=state.relationships[e.person];if(!rel)return;
     const before=Number(rel.values[e.key]||0);
     rel.values[e.key]=clamp(before+Number(e.value||0),0,10);
     events.push({...e,actual:rel.values[e.key]-before,visible:false});
@@ -211,6 +240,9 @@ function applyEffect(state,e,events){
     const rel=state.relationships[e.person];
     if(rel&&!rel.discoveredParams.includes(e.key))rel.discoveredParams.push(e.key);
     events.push({...e,visible:false});
+  }else if(e.type==='itemRemove'){
+    const ok=removeItem(state,e.id,Number(e.qty||1));
+    events.push({...e,ok,visible:false});
   }else if(e.type==='hazard'){
     state.hazards.dynamic[e.id]={level:e.level||'medium',reason:e.reason||'небезпека поруч',ongoing:true};
     events.push({...e,visible:false});
@@ -263,36 +295,36 @@ export function executeAction(state,action){
   events.push(...reconcileStatuses(next));
   next.updatedAt=Date.now();
   for(const e of events)recordAudit(next,actionId,e);
-  return {state:next,events};
+  return{state:next,events};
 }
 
 /*
-  ПРИНЦИП ПРЕВʼЮ:
-  до натискання гравець бачить тільки час і прямі фізичні ресурси:
-  Бадьорість / Вода / Ситість / Здоровʼя.
-  НЕ показуємо характеристики, стосунки, репутацію, стани, прапорці, предметні секрети.
+  Прогноз тепер рахується так само, як цифри на HUD:
+  порівнюємо ОКРУГЛЕНЕ значення до і після дії.
+  Тому "Вода -2%" означає, що гравець реально побачить, наприклад, 74% -> 72%.
 */
 export function previewAction(state,action){
-  const {events}=executeAction(state,action),parts=[];
+  const next=executeAction(state,action).state;
+  const parts=[];
   if(action.minutes>0)parts.push(action.minutes+' хв');
 
-  const allow=new Set(['satiety','water','energy']);
-  const agg={satiety:0,water:0,energy:0,health:0};
-
-  for(const e of events){
-    if(e.visible===false)continue;
-    if(e.type==='need'&&allow.has(e.key))agg[e.key]+=Number(e.actual||0);
-    if(e.type==='health'||e.type==='damage')agg.health+=Number(e.actual||0);
-  }
-
-  const add=(label,n)=>{
-    const rounded=Math.round(n);
-    if(rounded!==0)parts.push(`${label} ${rounded>0?'+':''}${rounded}%`);
+  const before={
+    energy:Math.round(state.needs.energy),
+    water:Math.round(state.needs.water),
+    satiety:Math.round(state.needs.satiety),
+    health:Math.round(state.health)
   };
-  add('Бадьорість',agg.energy);
-  add('Вода',agg.water);
-  add('Ситість',agg.satiety);
-  add('Здоровʼя',agg.health);
+  const after={
+    energy:Math.round(next.needs.energy),
+    water:Math.round(next.needs.water),
+    satiety:Math.round(next.needs.satiety),
+    health:Math.round(next.health)
+  };
 
+  const labels={energy:'Бадьорість',water:'Вода',satiety:'Ситість',health:'Здоровʼя'};
+  for(const key of ['energy','water','satiety','health']){
+    const d=after[key]-before[key];
+    if(d!==0)parts.push(`${labels[key]} ${d>0?'+':''}${d}%`);
+  }
   return parts;
 }

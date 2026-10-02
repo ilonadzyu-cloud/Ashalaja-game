@@ -1,6 +1,6 @@
 import {STAT_KEYS,STAT_LABELS,REL_LABELS} from './config.js';
 import {STATUS_DEFS,CLOTHES,WEATHER_PRESETS} from './data.js';
-import {createInitialState,executeAction,previewAction,equipmentTotals,equip,statModifiers,thermal,formatTime,threatInfo} from './engine.js';
+import {createInitialState,executeAction,previewAction,equipmentTotals,equip,statModifiers,effectiveStat,thermal,formatTime,threatInfo} from './engine.js';
 import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js';
 import {coreActions} from './story-test.js';
 
@@ -13,6 +13,18 @@ function toast(title,body=''){
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.add('hidden'),2200);
+}
+
+function statusEffectText(id){
+  const d=STATUS_DEFS[id];
+  if(!d)return'';
+  const parts=[];
+  for(const [key,value] of Object.entries(d.mods||{})){
+    const label=STAT_LABELS[key]||key;
+    parts.push(`${label} ${value>0?'+':''}${value}`);
+  }
+  for(const extra of d.extraEffects||[])parts.push(extra);
+  return parts.join(' · ');
 }
 
 async function autosave(){
@@ -84,7 +96,10 @@ function render(){
   $('#miniNeeds').innerHTML=values.map(([icon,label,value])=>`<div class="needChip"><b>${icon} ${label}</b><span>${Math.round(value)}%</span></div>`).join('');
 
   $('#activeStateCount').textContent=`(${G.activeStatuses.length})`;
-  $('#activeStates').innerHTML=G.activeStatuses.map(id=>`<div class="state"><b>${STATUS_DEFS[id].name}</b><div class="small">${STATUS_DEFS[id].blurb}</div></div>`).join('')||'<p class="small">Нема активних станів.</p>';
+  $('#activeStates').innerHTML=G.activeStatuses.map(id=>{
+    const d=STATUS_DEFS[id],effects=statusEffectText(id);
+    return `<div class="state"><b>${d.name}</b><div class="small">${d.blurb}${effects?`<br><b>ефект:</b> ${effects}`:''}</div></div>`;
+  }).join('')||'<p class="small">Нема активних станів.</p>';
 
   renderActions();
   renderTab();
@@ -112,9 +127,10 @@ function renderTab(){
 
   if(currentTab==='stats'){
     const mods=statModifiers(G);
-    panel.innerHTML='<h2>Характеристики</h2>'+STAT_KEYS.map(k=>{
+    panel.innerHTML='<h2>Характеристики</h2><p class="small">10 поділок = постійний прогрес до наступного рівня. Тимчасові плюси й мінуси від станів та шмоток прогрес не змінюють. <b>Зараз</b> – реальне значення характеристики з усіма модифікаторами.</p>'+STAT_KEYS.map(k=>{
       const s=G.stats[k],pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<s.progress?'on':''}"></span>`).join('');
-      return `<div class="stat-row"><div><b>${STAT_LABELS[k]}</b><div class="small">Рівень ${s.level}${mods[k]?` · тимчасово ${mods[k]>0?'+':''}${mods[k]}`:''}</div></div><div class="stat-meter">${pips}</div></div>`;
+      const mod=mods[k]||0,now=effectiveStat(G,k);
+      return `<div class="stat-row"><div><b>${STAT_LABELS[k]}</b><div class="small">Рівень ${s.level} · прогрес ${s.progress}/10${mod?` · тимчасово ${mod>0?'+':''}${mod}`:''} · <b>Зараз: ${now}</b></div></div><div class="stat-meter">${pips}</div></div>`;
     }).join('');
   }
 
@@ -150,8 +166,9 @@ function renderTab(){
     panel.innerHTML=`<h2>Стани</h2><div class="small">Відкрито ${ids.filter(x=>known.has(x)).length} / ${ids.length}</div>`+
       ids.map(id=>{
         const d=STATUS_DEFS[id];
+        const effects=statusEffectText(id);
         return known.has(id)
-          ?`<div class="book-row"><b>${d.name}</b><div class="small">${d.blurb}<br><b>як позбутись:</b> ${d.remove}${d.persistentUnlock?'<br><b>ефект:</b> відкриває секретні дії [ЄБАТОРІУМ].':''}</div></div>`
+          ?`<div class="book-row"><b>${d.name}</b><div class="small">${d.blurb}${effects?`<br><b>ефект:</b> ${effects}`:''}${d.persistentUnlock?'<br><b>особливий ефект:</b> відкриває секретні дії [ЄБАТОРІУМ].':''}<br><b>як позбутись:</b> ${d.remove}</div></div>`
           :'<div class="book-row locked"><b>???</b><div class="small">Ще не відкрито.</div></div>';
       }).join('');
   }
