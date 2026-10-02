@@ -27,12 +27,12 @@ const ATMOSPHERES={
     dogs:{min:55000,max:120000,volume:0.20}
   },
   hut:{
-    layers:[['village',0.06],['fireplace',0.62]],
-    dogs:{min:100000,max:180000,volume:0.08}
+    layers:[['fireplace',0.62]],
+    dogs:null
   },
   rain:{
-    layers:[['village',0.05],['rain',0.64]],
-    dogs:{min:120000,max:210000,volume:0.06}
+    layers:[['rain',0.64]],
+    dogs:null
   }
 };
 

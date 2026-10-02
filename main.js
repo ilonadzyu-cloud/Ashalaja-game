@@ -1,16 +1,16 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=056';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=056';
+} from './config.js?v=057';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=057';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=056';
+} from './engine.js?v=057';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=056';
-import {audioManager} from './audio.js?v=056';
+} from './storage.js?v=057';
+import {audioManager} from './audio.js?v=057';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -509,7 +509,7 @@ function renderAudio(){
         </div>
 
         <div class="audio-note">
-          Надворі – тихі пташки й рідкі далекі пси. У хаті – приглушений зовнішній фон і багаття. Під дощем – окремий природний запис дощу. Ніяких додаткових свистів чи «страшних» шумів, якщо їх нема в сцені.
+          Кожна атмосфера окрема: «Село» – пташки й рідкі далекі пси. У хаті – тільки багаття. Під дощем – тільки дощ. Ніяких зайвих звуків поверх.
         </div>
       </div>
 
