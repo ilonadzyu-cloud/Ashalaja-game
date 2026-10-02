@@ -5,21 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b100d">
   <title>Десь не там</title>
-  <link rel="stylesheet" href="./styles.css?v=059">
+  <link rel="stylesheet" href="./styles.css?v=060">
 </head>
 <body>
   <main id="app">
     <section id="startScreen" class="screen start-screen">
       <div class="start-card">
-        <div class="version">v0.5.9</div>
+        <div class="version">v0.6.0</div>
         <h1>ДЕСЬ НЕ ТАМ</h1>
         <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
-
         <div class="start-actions">
           <button id="newGameBtn" class="primary big">Нова гра</button>
           <button id="continueBtn" class="big">Продовжити</button>
         </div>
-
         <div id="runPicker" class="run-picker hidden"></div>
         <div id="storageStatus" class="storage-status small"></div>
       </div>
@@ -28,38 +26,26 @@
     <section id="howToScreen" class="screen howto-screen hidden">
       <div class="howto-wrap">
         <div class="howto-head">
-          <div class="howto-version">v0.5.9</div>
+          <div class="howto-version">v0.6.0</div>
           <h1 class="howto-title">ДЕСЬ НЕ ТАМ</h1>
           <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
           <div class="howto-kicker">ПЕРЕД ТИМ, ЯК ЛІЗТИ В ЦЕ СЕЛО</div>
         </div>
-
         <div id="howToIntroCards"></div>
-
-        <div class="howto-start">
-          <button id="beginGameBtn" class="primary big">Почати гру</button>
-        </div>
+        <div class="howto-start"><button id="beginGameBtn" class="primary big">Почати гру</button></div>
       </div>
     </section>
 
     <section id="gameScreen" class="game-shell hidden">
       <header class="game-top">
         <div class="top-left">
-          <div class="hero-mini">
-            <img class="hero-portrait" src="./hero-face.png" alt="Герой">
-          </div>
+          <div class="hero-mini"><img id="heroPortrait" class="hero-portrait" src="./hero-face.png" alt="Герой"></div>
           <div class="top-copy">
-            <div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.5.9</span></div>
-            <div class="world-line">
-              <b id="timeLine"></b>
-              <span id="weatherLine"></span>
-              <span id="threatLine"></span>
-            </div>
+            <div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.6.0</span></div>
+            <div class="world-line"><b id="timeLine"></b><span id="weatherLine"></span><span id="threatLine"></span></div>
           </div>
         </div>
-
         <div id="miniNeeds" class="mini-needs"></div>
-
         <div class="top-buttons">
           <button id="menuBtn" class="icon-btn">☰ Меню</button>
           <button id="exitBtn" class="icon-btn ghost">Вийти</button>
@@ -67,12 +53,7 @@
       </header>
 
       <section class="stage">
-        <div class="stage-image">
-          <div class="stage-placeholder">
-            <div class="stage-kicker">ГЛАВА 1</div>
-            <div class="stage-title">сюжет переносимо наступним етапом</div>
-          </div>
-        </div>
+        <div id="stageImage" class="stage-image"></div>
 
         <div class="quick-row">
           <div class="quick-label">Швидкий доступ</div>
@@ -84,16 +65,11 @@
           <div id="activeStates"></div>
         </details>
 
-        <article class="story-card">
-          <div class="story-kicker">ІНТЕРФЕЙС ГОТОВИЙ ДО ПЕРЕНОСУ СЮЖЕТУ</div>
-          <div id="storyText" class="story-text">
-            <p>Тут буде йти сама історія. Верх тепер займає мінімум місця, меню винесене окремо, а швидкі слоти й активні стани не лізуть у текст.</p>
-            <p>Наступним кроком сюди переносимо першу главу вже на новому ядрі.</p>
-          </div>
-          <div class="story-actions">
-            <button id="openInventoryBtn">Відкрити інвентар</button>
-            <button id="openRelationsBtn">Подивитись стосунки</button>
-          </div>
+        <article id="storyCard" class="story-card">
+          <div id="storyKicker" class="story-kicker">ГЛАВА 1</div>
+          <div id="storyText" class="story-text"></div>
+          <div id="storyExtras"></div>
+          <div id="storyChoices" class="story-actions"></div>
         </article>
       </section>
     </section>
@@ -101,13 +77,9 @@
     <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">
       <div class="menu-sheet">
         <div class="menu-head">
-          <div>
-            <div class="menu-title">Меню</div>
-            <div id="menuMeta" class="small"></div>
-          </div>
+          <div><div class="menu-title">Меню</div><div id="menuMeta" class="small"></div></div>
           <button id="closeMenuBtn" class="icon-btn">✕</button>
         </div>
-
         <nav id="menuTabs" class="menu-tabs">
           <button data-tab="inventory" class="active">Інвентар</button>
           <button data-tab="clothes">Шмотки</button>
@@ -119,17 +91,13 @@
           <button data-tab="shop">Крамничка</button>
           <button data-tab="settings">⚙️ Налаштування</button>
         </nav>
-
         <section id="menuContent" class="menu-content"></section>
       </div>
     </div>
 
     <div id="slotPickerOverlay" class="mini-overlay hidden">
       <div class="mini-dialog">
-        <div class="menu-head">
-          <div class="menu-title">У який швидкий слот?</div>
-          <button id="closeSlotPickerBtn" class="icon-btn">✕</button>
-        </div>
+        <div class="menu-head"><div class="menu-title">У який швидкий слот?</div><button id="closeSlotPickerBtn" class="icon-btn">✕</button></div>
         <div id="slotPickerButtons" class="slot-picker-buttons"></div>
       </div>
     </div>
@@ -148,7 +116,6 @@
 
     <div id="toast" class="toast hidden"></div>
   </main>
-
-  <script type="module" src="./main.js?v=059"></script>
+  <script type="module" src="./main.js?v=060"></script>
 </body>
 </html>

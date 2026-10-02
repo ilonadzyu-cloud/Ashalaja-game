@@ -1,5 +1,5 @@
-export const CORE_VERSION=5;
-// Не міняємо namespace: сейви з v0.3–v0.4 мають пережити оновлення інтерфейсу.
+export const CORE_VERSION=6;
+// Не міняємо namespace: старі сейви мають коректно пережити оновлення інтерфейсу.
 export const SAVE_NAMESPACE='des-ne-tam-v3';
 
 export const STAT_KEYS=['strength','attention','agility','charisma','pofigism','ahui'];

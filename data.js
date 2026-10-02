@@ -18,14 +18,16 @@ export const STATUS_DEFS={
     name:'ОСТАНОВОЧКА ЄБАТОРІУМ',
     blurb:'Після такого ви вже готові перевіряти будь-яку хуйню.',
     mods:{attention:1,pofigism:1,ahui:1},
-    remove:'сам пройде.',
+    remove:'сам пройде через 30 ігрових хвилин.',
+    durationMinutes:30,
     persistentUnlock:'yebatorium'
   },
   scared:{
     name:'ОБСЕРУНЬКАВСЯ ВІД СТРАХУ',
     blurb:'Страшно капець.',
     mods:{attention:2,agility:1,pofigism:-2,charisma:-1},
-    remove:'коли попустить.'
+    durationMinutes:20,
+    remove:'сам пройде через 20 ігрових хвилин.'
   },
   wet:{name:'ПРОМОК',blurb:'Одяг мокрий і це вже починає бісити.',mods:{},remove:'висохнути або змінити мокрий одяг.'},
   cold:{name:'ЗМЕРЗ',blurb:'Пальці вже не дуже слухаються.',mods:{agility:-1},remove:'зігрітись і висохнути.'},
@@ -35,16 +37,23 @@ export const STATUS_DEFS={
   angry:{name:'ЗЛИЙ ЯК СОБАКА',blurb:'Хтось явно дістав.',mods:{strength:1,charisma:-1},remove:'коли попустить.'},
   suspicious:{name:'ШОСЬ ТУТ НЕ ТАК',blurb:'Підозріло.',mods:{attention:1},remove:'коли розберетесь або переключитесь.'},
   skunk:{name:'ДИКИЙ СКУНС',blurb:'Від вас несе так, що люди самі тримають дистанцію.',mods:{charisma:-2},remove:'помитись і змінити одяг.'},
-  tipsy:{name:'ПІД ШОФЕ',blurb:'Уже веселіше. Це не значить, що краще.',mods:{pofigism:2,charisma:1,attention:-1},remove:'сам пройде.'}
+  tipsy:{name:'ПІД ШОФЕ',blurb:'Уже веселіше. Це не значить, що краще.',mods:{pofigism:2,charisma:1,attention:-1},durationMinutes:90,remove:'сам пройде через 90 ігрових хвилин.'}
 };
 
 export const CLOTHES={
+  modern_shirt:{name:'Ваша сорочка',slot:'body',armor:0,warmth:0,heatBurden:0,rainProtection:0,note:'Те, в чому ви сюди якось приперлись.'},
+  modern_jacket:{name:'Ваша куртка',slot:'outer',armor:0,warmth:1,heatBurden:0,rainProtection:1,note:'До зустрічі з голубом була нормальна.'},
+  modern_pants:{name:'Ваші штани',slot:'legs',armor:0,warmth:1,heatBurden:0,rainProtection:0},
+  modern_boots:{name:'Ваші черевики',slot:'feet',armor:0,warmth:1,heatBurden:0,rainProtection:1},
+
   local_shirt:{
     name:'Місцева сорочка',slot:'body',armor:0,warmth:0,heatBurden:0,rainProtection:0,
     note:'Люди менше дивляться скоса.'
   },
-  local_jacket:{name:'Місцева куртка',slot:'outer',armor:1,warmth:2,heatBurden:1,rainProtection:1},
+  local_vest:{name:'Темна безрукавка',slot:'outer',armor:0,warmth:1,heatBurden:0,rainProtection:0},
+  local_pants:{name:'Місцеві штани',slot:'legs',armor:0,warmth:1,heatBurden:0,rainProtection:0},
   boots:{name:'Грубі чоботи',slot:'feet',armor:1,warmth:1,heatBurden:0,rainProtection:2},
+
   sheepskin:{name:'Товстий кожух',slot:'outer',armor:1,warmth:4,heatBurden:3,rainProtection:1,statMods:{agility:-1}},
   leather_vest:{name:'Шкіряний жилет',slot:'outer',armor:2,warmth:1,heatBurden:1,rainProtection:0}
 };
