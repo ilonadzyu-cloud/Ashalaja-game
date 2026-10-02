@@ -1,81 +1,65 @@
 export const STATUS_DEFS={
   hangover:{
-    name:'ЖОСТКИЙ БУДУНЯРА',portrait:'./portrait_base.png',
-    blurb:'Бувало і краще.',
-    mods:{attention:-2,agility:-1,pofigism:2},
-    drainMultipliers:{water:1.25},
-    extraEffects:['Вода витрачається на 25% швидше.'],
-    remove:'поїсти, попити й трохи прийти до тями.'
+    name:'ЖОСТКИЙ БУДУНЯРА',portrait:'./portrait_base.png',blurb:'Бувало і краще.',
+    mods:{attention:-2,agility:-1,pofigism:2},drainMultipliers:{water:1.25},
+    extraEffects:['Вода витрачається на 25% швидше.'],remove:'поїсти, попити й трохи прийти до тями.'
   },
   pigeonHumiliated:{
-    name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',portrait:'./portrait_angry.png',
-    blurb:'Ну буває.',
-    mods:{charisma:-1,pofigism:1},
-    remove:'помитись або змінити обісрану одежину.'
+    name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',portrait:'./portrait_angry.png',blurb:'Ну буває.',
+    mods:{charisma:-1,pofigism:1},remove:'змінити замизгану куртку.'
   },
-  dryMouth:{name:'СУШНЯК',portrait:'./portrait_worry.png',blurb:'Сушить.',mods:{attention:-1},remove:'попити.'},
   yebatorium:{
     name:'ОСТАНОВОЧКА ЄБАТОРІУМ',portrait:'./portrait_ahui.png',
     blurb:'Після такого ви вже готові перевіряти будь-яку хуйню.',
-    mods:{attention:1,pofigism:1,ahui:1},
-    remove:'сам пройде через 30 ігрових хвилин.',
-    durationMinutes:30,
-    persistentUnlock:'yebatorium'
+    mods:{attention:1,pofigism:1,ahui:1},durationMinutes:30,persistentUnlock:'yebatorium',
+    remove:'сам пройде через 30 ігрових хвилин.'
+  },
+  blessed:{
+    name:'СВЯТА ВОДИЧКА ПРАЦЮЄ',portrait:'./portrait_base.png',
+    blurb:'Баба Галя явно шось знала.',mods:{},negativeModShield:1,durationMinutes:60,
+    extraEffects:['Кожен негативний модифікатор від активних станів слабшає на 1.'],
+    remove:'ефект сам минає через 60 ігрових хвилин.'
   },
   scared:{
-    name:'ОБСЕРУНЬКАВСЯ ВІД СТРАХУ',portrait:'./portrait_worry.png',
-    blurb:'Страшно капець.',
-    mods:{attention:2,agility:1,pofigism:-2,charisma:-1},
-    durationMinutes:20,
+    name:'ОБСЕРУНЬКАВСЯ ВІД СТРАХУ',portrait:'./portrait_worry.png',blurb:'Страшно капець.',
+    mods:{attention:2,agility:1,pofigism:-2,charisma:-1},durationMinutes:20,
     remove:'сам пройде через 20 ігрових хвилин.'
   },
-  wet:{name:'ПРОМОК',blurb:'Одяг мокрий і це вже починає бісити.',mods:{},remove:'висохнути або змінити мокрий одяг.'},
-  cold:{name:'ЗМЕРЗ',blurb:'Пальці вже не дуже слухаються.',mods:{agility:-1},remove:'зігрітись і висохнути.'},
-  overheated:{name:'ПЕРЕГРІВ',blurb:'Жарко пиздець.',mods:{attention:-1},remove:'піти в тінь, охолонути й попити.'},
-  tired:{name:'ЗАЄБАВСЯ',blurb:'Спати вже хочеться.',mods:{attention:-1,agility:-1},remove:'відпочити.'},
-  hungry:{name:'ГОЛОДНИЙ',blurb:'Їсти хочеться пиздець.',mods:{strength:-1,attention:-1},remove:'поїсти.'},
-  angry:{name:'ЗЛИЙ ЯК СОБАКА',blurb:'Хтось явно дістав.',mods:{strength:1,charisma:-1},remove:'коли попустить.'},
-  suspicious:{name:'ШОСЬ ТУТ НЕ ТАК',blurb:'Підозріло.',mods:{attention:1},remove:'коли розберетесь або переключитесь.'},
-  skunk:{name:'ДИКИЙ СКУНС',blurb:'Від вас несе так, що люди самі тримають дистанцію.',mods:{charisma:-2},remove:'помитись і змінити одяг.'},
-  tipsy:{name:'ПІД ШОФЕ',blurb:'Уже веселіше. Це не значить, що краще.',mods:{pofigism:2,charisma:1,attention:-1},durationMinutes:90,remove:'сам пройде через 90 ігрових хвилин.'}
+  wet:{name:'ПРОМОК',portrait:'./portrait_worry.png',blurb:'Одяг мокрий і це вже починає бісити.',mods:{},remove:'висохнути або змінити мокрий одяг.'},
+  cold:{name:'ЗМЕРЗ',portrait:'./portrait_tired.png',blurb:'Пальці вже не дуже слухаються.',mods:{agility:-1},remove:'зігрітись і висохнути.'},
+  overheated:{name:'ПЕРЕГРІВ',portrait:'./portrait_tired.png',blurb:'Жарко пиздець.',mods:{attention:-1},remove:'піти в тінь, охолонути й попити.'},
+  tired:{name:'ЗАЄБАВСЯ',portrait:'./portrait_tired.png',blurb:'Спати вже хочеться.',mods:{attention:-1,agility:-1},remove:'відпочити.'},
+  hungry:{name:'ГОЛОДНИЙ',portrait:'./portrait_tired.png',blurb:'Їсти хочеться пиздець.',mods:{strength:-1,attention:-1},remove:'поїсти.'},
+  thirsty:{name:'СУШНЯК',portrait:'./portrait_worry.png',blurb:'В роті пустеля.',mods:{attention:-1},remove:'попити.'},
+  angry:{name:'ЗЛИЙ ЯК СОБАКА',portrait:'./portrait_angry.png',blurb:'Хтось явно дістав.',mods:{strength:1,charisma:-1},remove:'коли попустить.'},
+  suspicious:{name:'ШОСЬ ТУТ НЕ ТАК',portrait:'./portrait_suspicious.png',blurb:'Підозріло.',mods:{attention:1},remove:'коли розберетесь або переключитесь.'},
+  skunk:{name:'ДИКИЙ СКУНС',portrait:'./portrait_angry.png',blurb:'Від вас несе так, що люди самі тримають дистанцію.',mods:{charisma:-2},remove:'помитись і змінити одяг.'},
+  tipsy:{name:'ПІД ШОФЕ',portrait:'./portrait_ahui.png',blurb:'Уже веселіше. Це не значить, що краще.',mods:{pofigism:2,charisma:1,attention:-1},durationMinutes:90,remove:'сам пройде через 90 ігрових хвилин.'}
 };
 
 export const CLOTHES={
-  modern_shirt:{name:'Ваша сорочка',slot:'body',armor:0,warmth:0,heatBurden:0,rainProtection:0,note:'Те, в чому ви сюди якось приперлись.'},
-  modern_jacket:{name:'Ваша куртка',slot:'outer',armor:0,warmth:1,heatBurden:0,rainProtection:1,note:'До зустрічі з голубом була нормальна.'},
-  modern_pants:{name:'Ваші штани',slot:'legs',armor:0,warmth:1,heatBurden:0,rainProtection:0},
-  modern_boots:{name:'Ваші черевики',slot:'feet',armor:0,warmth:1,heatBurden:0,rainProtection:1},
-
-  local_shirt:{
-    name:'Місцева сорочка',slot:'body',armor:0,warmth:0,heatBurden:0,rainProtection:0,
-    note:'Люди менше дивляться скоса.'
-  },
-  local_vest:{name:'Темна безрукавка',slot:'outer',armor:0,warmth:1,heatBurden:0,rainProtection:0},
-  local_pants:{name:'Місцеві штани',slot:'legs',armor:0,warmth:1,heatBurden:0,rainProtection:0},
-  boots:{name:'Грубі чоботи',slot:'feet',armor:1,warmth:1,heatBurden:0,rainProtection:2},
-
-  sheepskin:{name:'Товстий кожух',slot:'outer',armor:1,warmth:4,heatBurden:3,rainProtection:1,statMods:{agility:-1}},
-  leather_vest:{name:'Шкіряний жилет',slot:'outer',armor:2,warmth:1,heatBurden:1,rainProtection:0}
+  modern_shirt:{name:'Сорочка з секонда',slot:'body',armor:0,warmth:0,heatBurden:0,rainProtection:0,note:'Ну сорочка і сорочка.'},
+  modern_jacket:{name:'Замизгана куртка вашого діда',slot:'outer',armor:0,warmth:1,heatBurden:0,rainProtection:1,note:'Після голуба стала ще замизганішою.'},
+  modern_pants:{name:'Штани потаскані',slot:'legs',armor:0,warmth:1,heatBurden:0,rainProtection:0},
+  modern_boots:{name:'Черевички',slot:'feet',armor:0,warmth:1,heatBurden:0,rainProtection:1},
+  local_shirt:{name:'Святкова сорочка невідомого покійника',slot:'body',armor:0,warmth:0,heatBurden:0,rainProtection:0,note:'Чия була – баба Галя так і не сказала.'},
+  local_vest:{name:'Безрукавка з бабиної шафи',slot:'outer',armor:0,warmth:1,heatBurden:0,rainProtection:0},
+  local_pants:{name:'Штани на виріст',slot:'legs',armor:0,warmth:1,heatBurden:0,rainProtection:0},
+  boots:{name:'Чоботи для городу',slot:'feet',armor:1,warmth:1,heatBurden:0,rainProtection:2},
+  sheepskin:{name:'Кожух вагою з пів Євпапія',slot:'outer',armor:1,warmth:4,heatBurden:3,rainProtection:1,statMods:{agility:-1}},
+  leather_vest:{name:'Шкіряна жилетка місцевого авторитета',slot:'outer',armor:2,warmth:1,heatBurden:1,rainProtection:0}
 };
 
 export const ITEM_DEFS={
-  water:{
-    name:'Вода',icon:'💧',category:'Їжа та напої',stack:5,
-    description:'Можна випити.',
-    useEffects:[{type:'need',key:'water',value:30}]
-  },
-  salo:{
-    name:'Сало',icon:'🥓',category:'Їжа та напої',stack:5,
-    description:'Можна зʼїсти.',
-    useEffects:[{type:'need',key:'satiety',value:25}]
-  },
+  water:{name:'Вода',icon:'💧',category:'Їжа та напої',stack:5,description:'Звичайна вода.',useEffects:[{type:'need',key:'water',value:30}]},
+  salo:{name:'Сало',icon:'🥓',category:'Їжа та напої',stack:5,description:'Можна зʼїсти. А можна підкупити голуба.',useEffects:[{type:'need',key:'satiety',value:25}]},
   vodka:{name:'Горілка',icon:'🍾',category:'Їжа та напої',stack:2,description:'Пахне так, що вже страшно.',useEffects:[{type:'statusAdd',id:'tipsy'}]},
-  aspirin:{name:'Аспірин',icon:'💊',category:'Ліки',stack:5,description:'Може трохи помогти від голови.'},
-  medkit:{name:'Аптечка',icon:'🩹',category:'Ліки',stack:2,description:'На випадок, якщо вже нормально так припече.',useEffects:[{type:'health',value:25}]},
+  aspirin:{name:'Аспірин',icon:'💊',category:'Ліки',stack:5,description:'Може трохи помогти від голови.',useEffects:[{type:'statusRemove',id:'hangover'}]},
+  medkit:{name:'Аптечка',icon:'🩹',category:'Ліки',stack:2,description:'Коли вже нормально так припекло.',useEffects:[{type:'health',value:25}]},
   knife:{name:'Ніж',icon:'🔪',category:'Зброя',stack:1,description:'Інструмент. І зброя. Залежить, шо ви надумали.'},
-  garlic:{name:'Часник',icon:'🧄',category:'Якась хуйня',stack:5,description:'Часник.'},
+  garlic:{name:'Часник',icon:'🧄',category:'Якась хуйня',stack:5,description:'Баба Галя сказала, що згодиться.'},
   onion:{name:'Цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Звичайна цибуля. Пока що.'},
-  holy_water:{name:'Свята вода',icon:'✝️',category:'Якась хуйня',stack:3,description:'Ну, хай буде.'},
+  holy_water:{name:'Свята вода',icon:'✝️',category:'Якась хуйня',stack:3,description:'На 60 хвилин послаблює кожен негативний модифікатор від станів на 1.',useEffects:[{type:'statusAdd',id:'blessed'}]},
   potion_unknown:{name:'??? Зілля',icon:'🧪',category:'Якась хуйня',stack:3,description:'Ефект: невідомий.',unknown:true}
 };
 
