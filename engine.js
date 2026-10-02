@@ -1,5 +1,5 @@
 import {STAT_KEYS,STAT_LABELS,NEED_LABELS} from './config.js';
-import {STATUS_DEFS,CLOTHES} from './data.js';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js';
 
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const clone=x=>JSON.parse(JSON.stringify(x));
@@ -8,19 +8,58 @@ export function createInitialState(runId=1){
   const stats={};
   for(const key of STAT_KEYS)stats[key]={level:1,progress:0};
   return {
-    schemaVersion:4,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
-    chapter:'core-test',scene:'sandbox',clock:{totalMinutes:420},
+    schemaVersion:5,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
+    chapter:'ui-shell',scene:'waiting-for-chapter-1',clock:{totalMinutes:420},
     health:100,needs:{satiety:80,water:75,energy:78},wetness:0,
     stats,activeStatuses:['hangover'],discoveredStatuses:['hangover'],unlocks:{yebatorium:false},
-    inventory:[{id:'water',qty:1},{id:'salo',qty:1}],importantItems:[],quickSlots:[null,null,null],
+    inventory:[{id:'water',qty:1},{id:'salo',qty:1}],
+    importantItems:[],
+    quickSlots:[null,null,null],
     ownedClothes:['local_shirt','local_jacket','boots','sheepskin','leather_vest'],
     equipment:{body:'local_shirt',outer:'local_jacket',feet:'boots'},
     relationships:{
       evpapiy:{name:'Євпапій',known:true,values:{trust:2,offense:0,greed:5,bullshit:7},discoveredParams:[]}
     },
-    money:0,flags:{},hazards:{dynamic:{}},audit:[],
+    money:0,flags:{mapUnlocked:false,shopUnlocked:false},hazards:{dynamic:{}},audit:[],
     world:{weather:{label:'Хмарно',icon:'☁️',tempC:16,wind:1,rain:0},location:'test-yard',environment:'outdoors'}
   };
+}
+
+export function normalizeState(raw){
+  const base=createInitialState(Number(raw?.runId||1));
+  const s={...base,...clone(raw||{})};
+
+  s.schemaVersion=5;
+  s.clock={...base.clock,...(s.clock||{})};
+  s.needs={...base.needs,...(s.needs||{})};
+  s.stats={...base.stats,...(s.stats||{})};
+  s.unlocks={...base.unlocks,...(s.unlocks||{})};
+  s.equipment={...base.equipment,...(s.equipment||{})};
+  s.flags={...base.flags,...(s.flags||{})};
+  s.hazards={...base.hazards,...(s.hazards||{}),dynamic:{...(s.hazards?.dynamic||{})}};
+  s.world={...base.world,...(s.world||{}),weather:{...base.world.weather,...(s.world?.weather||{})}};
+  s.relationships={...base.relationships,...(s.relationships||{})};
+  s.inventory=Array.isArray(s.inventory)?s.inventory:[];
+  s.importantItems=Array.isArray(s.importantItems)?s.importantItems:[];
+  s.quickSlots=Array.isArray(s.quickSlots)?s.quickSlots.slice(0,3):[null,null,null];
+  while(s.quickSlots.length<3)s.quickSlots.push(null);
+  s.activeStatuses=Array.isArray(s.activeStatuses)?s.activeStatuses:[];
+  s.discoveredStatuses=Array.isArray(s.discoveredStatuses)?s.discoveredStatuses:[];
+  s.ownedClothes=Array.isArray(s.ownedClothes)?s.ownedClothes:base.ownedClothes;
+  s.audit=Array.isArray(s.audit)?s.audit:[];
+
+  for(const key of STAT_KEYS){
+    s.stats[key]={...base.stats[key],...(s.stats[key]||{})};
+  }
+  for(const [id,relBase] of Object.entries(base.relationships)){
+    const rel=s.relationships[id]||relBase;
+    s.relationships[id]={
+      ...relBase,...rel,
+      values:{...relBase.values,...(rel.values||{})},
+      discoveredParams:Array.isArray(rel.discoveredParams)?rel.discoveredParams:[]
+    };
+  }
+  return s;
 }
 
 export function formatTime(total){
@@ -105,7 +144,55 @@ export function removeItem(state,id,qty=1){
     slot.qty-=take;left-=take;
     if(slot.qty<=0)state.inventory.splice(i,1);
   }
+  clearInvalidQuickSlots(state);
   return left===0;
+}
+
+export function addItem(state,id,qty=1){
+  const def=ITEM_DEFS[id];
+  if(!def||qty<=0)return false;
+
+  let left=qty;
+  for(const slot of state.inventory){
+    if(slot.id!==id||slot.qty>=def.stack)continue;
+    const room=def.stack-slot.qty;
+    const add=Math.min(room,left);
+    slot.qty+=add;left-=add;
+    if(left<=0)return true;
+  }
+
+  while(left>0){
+    if(state.inventory.length>=16)return false;
+    const add=Math.min(def.stack,left);
+    state.inventory.push({id,qty:add});
+    left-=add;
+  }
+  return true;
+}
+
+export function clearInvalidQuickSlots(state){
+  state.quickSlots=(state.quickSlots||[null,null,null]).map(id=>id&&itemCount(state,id)>0?id:null);
+}
+
+export function assignQuickSlot(state,slotIndex,itemId){
+  if(slotIndex<0||slotIndex>2)return false;
+  if(itemId!==null&&itemCount(state,itemId)<=0)return false;
+  state.quickSlots[slotIndex]=itemId;
+  return true;
+}
+
+export function useItem(state,id){
+  const def=ITEM_DEFS[id];
+  if(!def||itemCount(state,id)<=0||!Array.isArray(def.useEffects)||def.useEffects.length===0)return {state,used:false,events:[]};
+
+  const result=executeAction(state,{
+    id:`use_item_${id}`,
+    minutes:0,
+    effects:def.useEffects,
+    hiddenEffects:[{type:'itemRemove',id,qty:1}]
+  });
+  clearInvalidQuickSlots(result.state);
+  return {...result,used:true};
 }
 
 export function thermal(state){
@@ -140,20 +227,25 @@ function syncEnvironmentalHazards(state,damageSources){
 export function threatInfo(state){
   if(state.health<=15)return{key:'critical',label:'КРИТИЧНА',reason:'критично низьке здоровʼя'};
   if(state.health<=45)return{key:'high',label:'ВИСОКА',reason:'низьке здоровʼя'};
+
   const hazards=Object.values(state.hazards?.dynamic||{});
   const high=hazards.find(h=>h.level==='high'||h.level==='critical');
   if(high)return{key:'high',label:'ВИСОКА',reason:high.reason};
   const med=hazards.find(h=>h.level==='medium');
   if(med)return{key:'medium',label:'СЕРЕДНЯ',reason:med.reason};
+
   return{key:'low',label:'НИЗЬКА',reason:'прямої небезпеки нема'};
 }
 
 function recordAudit(state,actionId,event){
   state.audit=state.audit||[];
   state.audit.push({
-    at:state.clock.totalMinutes,actionId:actionId||'unknown',
-    type:event.type,key:event.key||event.id||event.person||null,
-    source:event.source||actionId||null,actual:event.actual??event.value??null
+    at:state.clock.totalMinutes,
+    actionId:actionId||'unknown',
+    type:event.type,
+    key:event.key||event.id||event.person||null,
+    source:event.source||actionId||null,
+    actual:event.actual??event.value??null
   });
   if(state.audit.length>120)state.audit.splice(0,state.audit.length-120);
 }
@@ -184,7 +276,6 @@ function timeCost(state,minutes,activity){
   needs.energy-=t.coldLevel*.7*unit;
   needs.satiety-=t.coldLevel*.35*unit;
 
-  // Стани можуть прискорювати витрату конкретної потреби.
   for(const key of ['satiety','water','energy']){
     if(needs[key]<0)needs[key]*=activeDrainMultiplier(state,key);
   }
@@ -240,6 +331,9 @@ function applyEffect(state,e,events){
     const rel=state.relationships[e.person];
     if(rel&&!rel.discoveredParams.includes(e.key))rel.discoveredParams.push(e.key);
     events.push({...e,visible:false});
+  }else if(e.type==='itemAdd'){
+    const ok=addItem(state,e.id,Number(e.qty||1));
+    events.push({...e,ok,visible:false});
   }else if(e.type==='itemRemove'){
     const ok=removeItem(state,e.id,Number(e.qty||1));
     events.push({...e,ok,visible:false});
@@ -267,7 +361,7 @@ function reconcileStatuses(state){
 }
 
 export function executeAction(state,action){
-  const next=clone(state),events=[],minutes=Number(action.minutes||0),actionId=action.id||'unknown';
+  const next=clone(normalizeState(state)),events=[],minutes=Number(action.minutes||0),actionId=action.id||'unknown';
 
   if(minutes>0){
     const cost=timeCost(next,minutes,action.activity||'light');
@@ -277,6 +371,7 @@ export function executeAction(state,action){
       const actual=next.needs[key]-before;
       if(actual)events.push({type:'need',key,actual,visible:true,source:actionId});
     }
+
     const wetBefore=next.wetness;
     next.wetness=clamp(wetBefore+cost.wetness,0,100);
     if(next.wetness!==wetBefore)events.push({type:'wetness',actual:next.wetness-wetBefore,visible:false,source:'weather'});
@@ -295,14 +390,10 @@ export function executeAction(state,action){
   events.push(...reconcileStatuses(next));
   next.updatedAt=Date.now();
   for(const e of events)recordAudit(next,actionId,e);
+  clearInvalidQuickSlots(next);
   return{state:next,events};
 }
 
-/*
-  Прогноз тепер рахується так само, як цифри на HUD:
-  порівнюємо ОКРУГЛЕНЕ значення до і після дії.
-  Тому "Вода -2%" означає, що гравець реально побачить, наприклад, 74% -> 72%.
-*/
 export function previewAction(state,action){
   const next=executeAction(state,action).state;
   const parts=[];

@@ -1,11 +1,21 @@
-import {STAT_KEYS,STAT_LABELS,REL_LABELS} from './config.js';
-import {STATUS_DEFS,CLOTHES,WEATHER_PRESETS} from './data.js';
-import {createInitialState,executeAction,previewAction,equipmentTotals,equip,statModifiers,effectiveStat,thermal,formatTime,threatInfo} from './engine.js';
-import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js';
-import {coreActions} from './story-test.js';
+import {
+  STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
+} from './config.js';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js';
+import {
+  normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
+  statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
+} from './engine.js';
+import {
+  listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
+  emergencySaveRun,storageCapabilities
+} from './storage.js';
 
 const $=s=>document.querySelector(s);
-let G=null,currentTab='stats',toastTimer=null,lastSaveResult=null;
+let G=null;
+let currentTab='inventory';
+let pendingQuickItem=null;
+let toastTimer=null;
 
 function toast(title,body=''){
   const el=$('#toast');
@@ -16,8 +26,7 @@ function toast(title,body=''){
 }
 
 function statusEffectText(id){
-  const d=STATUS_DEFS[id];
-  if(!d)return'';
+  const d=STATUS_DEFS[id];if(!d)return'';
   const parts=[];
   for(const [key,value] of Object.entries(d.mods||{})){
     const label=STAT_LABELS[key]||key;
@@ -27,186 +36,419 @@ function statusEffectText(id){
   return parts.join(' · ');
 }
 
-async function autosave(){
+async function persist(){
   if(!G)return;
-  lastSaveResult=await saveRun(G);
+  G=normalizeState(G);
+  await saveRun(G);
 }
 
-async function newRun(run){
+async function createRun(run){
   await clearRun(run);
-  const state=createInitialState(run);
-  await saveRun(state);
-  return state;
+  const {createInitialState}=await import('./engine.js');
+  G=createInitialState(run);
+  await saveRun(G);
+  showGame();
 }
 
 async function showStart(){
-  if(G)await autosave();
+  if(G)await persist();
   G=null;
   $('#gameScreen').classList.add('hidden');
   $('#startScreen').classList.remove('hidden');
-  await renderRuns();
+  $('#runPicker').classList.add('hidden');
+  await renderStorageStatus();
 }
 
-async function showGame(state){
-  G=state;
+function showGame(){
   $('#startScreen').classList.add('hidden');
   $('#gameScreen').classList.remove('hidden');
-  render();
+  renderGame();
 }
 
-async function renderRuns(){
-  const root=$('#runSlots'),runs=await listRuns();
-  root.innerHTML=runs.map(({run,state})=>{
-    const tm=state?formatTime(state.clock.totalMinutes):null;
-    const meta=state?`День ${tm.day} · ${tm.time} · ${Math.round(state.health)}% здоровʼя`:'Пусто';
-    return `<div class="run"><div class="run-head"><b>Проходження ${run}</b><span class="small">${meta}</span></div><div class="run-actions">${
-      state?`<button class="primary" data-cont="${run}">Продовжити</button><button data-new="${run}">Почати заново</button>`:`<button class="primary" data-new="${run}">Нова гра</button>`
-    }</div></div>`;
-  }).join('');
-
-  root.querySelectorAll('[data-cont]').forEach(b=>b.onclick=async()=>showGame(await loadRun(Number(b.dataset.cont))));
-  root.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
-    const run=Number(b.dataset.new),existing=await loadRun(run);
-    if(existing&&!confirm(`Стерти проходження ${run} і почати заново?`))return;
-    showGame(await newRun(run));
-  });
-
+async function renderStorageStatus(){
   const caps=await storageCapabilities();
   $('#storageStatus').textContent=`Збереження: ${caps.readBack?'працює':'є проблема'} · localStorage ${caps.localStorage?'✓':'×'} · IndexedDB ${caps.indexedDB?'✓':'×'}`;
 }
 
-function fmtPreview(text){
-  if(/-\d/.test(text))return `<span class="bad">${text}</span>`;
-  if(/\+\d/.test(text))return `<span class="good">${text}</span>`;
-  return text;
+async function openRunPicker(mode){
+  const runs=await listRuns();
+  const box=$('#runPicker');
+  box.classList.remove('hidden');
+
+  if(mode==='continue'){
+    const saved=runs.filter(x=>x.state);
+    if(saved.length===0){
+      box.innerHTML='<div class="run-card"><b>Нема збережених проходжень.</b></div>';
+      return;
+    }
+    box.innerHTML=saved.map(({run,state})=>{
+      const s=normalizeState(state),tm=formatTime(s.clock.totalMinutes);
+      return `<div class="run-card">
+        <div class="run-top"><b>Проходження ${run}</b><span class="small">День ${tm.day} · ${tm.time} · ❤️ ${Math.round(s.health)}%</span></div>
+        <div class="run-actions"><button class="primary" data-continue="${run}">Продовжити</button></div>
+      </div>`;
+    }).join('');
+
+    box.querySelectorAll('[data-continue]').forEach(b=>b.onclick=async()=>{
+      G=normalizeState(await loadRun(Number(b.dataset.continue)));
+      showGame();
+    });
+    return;
+  }
+
+  box.innerHTML=runs.map(({run,state})=>{
+    const s=state?normalizeState(state):null;
+    const meta=s?`Є сейв · День ${formatTime(s.clock.totalMinutes).day}`:'Пусто';
+    return `<div class="run-card">
+      <div class="run-top"><b>Проходження ${run}</b><span class="small">${meta}</span></div>
+      <div class="run-actions"><button class="primary" data-new="${run}">${s?'Почати заново':'Почати'}</button></div>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
+    const run=Number(b.dataset.new),existing=await loadRun(run);
+    if(existing&&!confirm(`Стерти проходження ${run} і почати заново?`))return;
+    await createRun(run);
+  });
 }
 
-function render(){
-  const tm=formatTime(G.clock.totalMinutes),w=G.world.weather,t=thermal(G),threat=threatInfo(G);
+function renderGame(){
+  if(!G)return;
+  G=normalizeState(G);
+
+  const tm=formatTime(G.clock.totalMinutes),w=G.world.weather,t=thermal(G),th=threatInfo(G);
+
   $('#timeLine').textContent=`День ${tm.day} · ${tm.time}`;
   $('#weatherLine').textContent=`${w.icon} ${w.label} ${w.tempC}°C · ${t.feel}`;
-  $('#threatLine').innerHTML=`Загроза: <b class="${threat.key==='low'?'good':threat.key==='medium'?'warn':'bad'}">${threat.label}</b> · ${threat.reason}`;
+  $('#threatLine').innerHTML=`Загроза: <b class="${th.key==='low'?'good':th.key==='medium'?'warn':'bad'}">${th.label}</b>${th.key!=='low'?` · ${th.reason}`:''}`;
 
-  const values=[
+  const needs=[
     ['❤️','Здоровʼя',G.health],
     ['🍞','Ситість',G.needs.satiety],
     ['💧','Вода',G.needs.water],
     ['😴','Бадьорість',G.needs.energy]
   ];
-  $('#miniNeeds').innerHTML=values.map(([icon,label,value])=>`<div class="needChip"><b>${icon} ${label}</b><span>${Math.round(value)}%</span></div>`).join('');
+  $('#miniNeeds').innerHTML=needs.map(([icon,label,value])=>`
+    <div class="need-chip"><b>${icon} ${label}</b><span>${icon} ${Math.round(value)}%</span></div>
+  `).join('');
 
   $('#activeStateCount').textContent=`(${G.activeStatuses.length})`;
-  $('#activeStates').innerHTML=G.activeStatuses.map(id=>{
-    const d=STATUS_DEFS[id],effects=statusEffectText(id);
-    return `<div class="state"><b>${d.name}</b><div class="small">${d.blurb}${effects?`<br><b>ефект:</b> ${effects}`:''}</div></div>`;
-  }).join('')||'<p class="small">Нема активних станів.</p>';
+  $('#activeStates').innerHTML=G.activeStatuses.length
+    ?G.activeStatuses.map(id=>{
+      const d=STATUS_DEFS[id],effects=statusEffectText(id);
+      return `<div class="state-row"><b>${d.name}</b><div class="small">${d.blurb}${effects?`<br>ефект: ${effects}`:''}</div></div>`;
+    }).join('')
+    :'<div class="small" style="padding-top:8px">Нема активних станів.</div>';
 
-  renderActions();
-  renderTab();
+  renderQuickSlots();
 }
 
-function renderActions(){
-  const actions=coreActions(G),root=$('#actions');
-  root.innerHTML=actions.map((a,i)=>{
-    const p=previewAction(G,a);
-    return `<button class="action" data-action="${i}"><div class="action-title">${a.title}</div>${p.length?`<div class="action-preview">${p.map(fmtPreview).join(' · ')}</div>`:''}</button>`;
+function renderQuickSlots(){
+  const root=$('#quickSlots');
+  root.innerHTML=G.quickSlots.map((id,i)=>{
+    if(!id)return `<button class="quick-slot empty" data-q="${i}">Слот ${i+1}</button>`;
+    const d=ITEM_DEFS[id],count=itemCount(G,id);
+    return `<button class="quick-slot" data-q="${i}">
+      <span class="qicon">${d?.icon||'◻️'}</span>
+      <span>${d?.name||id}</span>
+      <span class="qcount">×${count}</span>
+    </button>`;
   }).join('');
 
-  root.querySelectorAll('[data-action]').forEach(b=>b.onclick=async()=>{
-    const action=actions[Number(b.dataset.action)],result=executeAction(G,action);
+  root.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{
+    const i=Number(b.dataset.q),id=G.quickSlots[i];
+    if(!id){openMenu('inventory');return;}
+    const result=useItem(G,id);
+    if(!result.used){
+      toast('НЕ ВИЙШЛО','Цей предмет зараз не використовується напряму.');
+      return;
+    }
     G=result.state;
-    $('#sceneText').textContent=action.afterText||'Дія виконана.';
-    await autosave();
-    render();
+    await persist();
+    renderGame();
+    if(!$('#menuOverlay').classList.contains('hidden'))renderMenu();
+    toast('ВИКОРИСТАНО',ITEM_DEFS[id]?.name||id);
   });
 }
 
-function renderTab(){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
-  const panel=$('#tabPanel');
+function openMenu(tab=currentTab){
+  currentTab=tab;
+  $('#menuOverlay').classList.remove('hidden');
+  $('#menuOverlay').setAttribute('aria-hidden','false');
+  renderMenu();
+}
 
-  if(currentTab==='stats'){
-    const mods=statModifiers(G);
-    panel.innerHTML='<h2>Характеристики</h2><p class="small">10 поділок = постійний прогрес до наступного рівня. Тимчасові плюси й мінуси від станів та шмоток прогрес не змінюють. <b>Зараз</b> – реальне значення характеристики з усіма модифікаторами.</p>'+STAT_KEYS.map(k=>{
-      const s=G.stats[k],pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<s.progress?'on':''}"></span>`).join('');
-      const mod=mods[k]||0,now=effectiveStat(G,k);
-      return `<div class="stat-row"><div><b>${STAT_LABELS[k]}</b><div class="small">Рівень ${s.level} · прогрес ${s.progress}/10${mod?` · тимчасово ${mod>0?'+':''}${mod}`:''} · <b>Зараз: ${now}</b></div></div><div class="stat-meter">${pips}</div></div>`;
-    }).join('');
-  }
+function closeMenu(){
+  $('#menuOverlay').classList.add('hidden');
+  $('#menuOverlay').setAttribute('aria-hidden','true');
+}
 
-  if(currentTab==='relations'){
-    panel.innerHTML='<h2>Стосунки</h2><p class="small">Гра не показує, яка саме дія змінила ставлення. Не всі параметри персонажа відомі одразу.</p>'+
-      Object.entries(G.relationships).filter(([,r])=>r.known).map(([id,r])=>{
-        const discovered=r.discoveredParams||[];
-        return `<div class="relation-card"><div class="relation-head"><b>${r.name}</b><span class="small">${discovered.length?'':'Ставлення: незрозуміле'}</span></div>${
-          discovered.length?`<div class="relation-params">${discovered.map(k=>{
-            const v=r.values[k]??0;
-            return `<div class="relation-param"><span>${REL_LABELS[k]||k}</span><div class="relTrack"><div class="relFill" style="width:${v*10}%"></div></div><b>${v}/10</b></div>`;
-          }).join('')}</div>`:'<div class="small" style="margin-top:8px">Ви ще мало його знаєте.</div>'
-        }</div>`;
-      }).join('');
-  }
+function renderMenu(){
+  if(!G)return;
+  document.querySelectorAll('#menuTabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
 
-  if(currentTab==='clothes'){
-    const eq=equipmentTotals(G);
-    panel.innerHTML=`<div class="panel-head"><h2>Шмотки</h2><span class="small">Броня +${eq.armor} · холод +${eq.warmth} · жара -${eq.heatBurden}</span></div>`+
-      G.ownedClothes.map(id=>{
-        const d=CLOTHES[id],on=G.equipment[d.slot]===id,bits=[`Броня +${d.armor}`,`Холод +${d.warmth}`];
-        if(d.heatBurden)bits.push(`Жара -${d.heatBurden}`);
-        if(d.rainProtection)bits.push(`Дощ +${d.rainProtection}`);
-        return `<div class="clothes-row"><div><b>${d.name}</b><div class="small">${bits.join(' · ')}${d.note?' · '+d.note:''}</div></div><button data-equip="${id}" ${on?'disabled':''}>${on?'Вдягнено':'Вдягнути'}</button></div>`;
-      }).join('');
-    panel.querySelectorAll('[data-equip]').forEach(b=>b.onclick=async()=>{
-      equip(G,b.dataset.equip);await autosave();render();
-    });
-  }
+  const tm=formatTime(G.clock.totalMinutes);
+  $('#menuMeta').textContent=`Проходження ${G.runId} · День ${tm.day} · ${tm.time}`;
 
-  if(currentTab==='states'){
-    const known=new Set(G.discoveredStatuses),ids=Object.keys(STATUS_DEFS);
-    panel.innerHTML=`<h2>Стани</h2><div class="small">Відкрито ${ids.filter(x=>known.has(x)).length} / ${ids.length}</div>`+
-      ids.map(id=>{
+  if(currentTab==='inventory')renderInventory();
+  if(currentTab==='clothes')renderClothes();
+  if(currentTab==='stats')renderStats();
+  if(currentTab==='states')renderStates();
+  if(currentTab==='relations')renderRelations();
+  if(currentTab==='map')renderMap();
+  if(currentTab==='shop')renderShop();
+  if(currentTab==='saves')renderSaves();
+}
+
+function renderInventory(){
+  const root=$('#menuContent');
+  const slots=[...G.inventory];
+  while(slots.length<16)slots.push(null);
+
+  root.innerHTML=`
+    <div class="section-title"><h2>Інвентар</h2><span class="small">${G.inventory.length}/16 слотів</span></div>
+    <p class="explain">Звичайні речі займають слот. Важливі сюжетні предмети лежать окремо й місце не жеруть.</p>
+    <div class="inventory-grid">
+      ${slots.map((slot,i)=>{
+        if(!slot)return `<div class="inventory-slot empty">Пусто</div>`;
+        const d=ITEM_DEFS[slot.id]||{name:slot.id,icon:'◻️',category:'Інше',description:''};
+        const canUse=Array.isArray(d.useEffects)&&d.useEffects.length>0;
+        return `<div class="inventory-slot">
+          <div>
+            <div class="item-top"><span class="item-icon">${d.icon}</span><span class="item-qty">×${slot.qty}</span></div>
+            <div class="item-name">${d.name}</div>
+            <div class="item-cat">${d.category}</div>
+            <div class="item-desc">${d.description||''}</div>
+          </div>
+          <div class="item-actions">
+            ${canUse?`<button data-use="${slot.id}">Використати</button>`:''}
+            <button data-quick="${slot.id}">У швидкий слот</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="section-title" style="margin-top:18px"><h2>Важливе</h2></div>
+    <div class="important-list">
+      ${G.importantItems.length
+        ?G.importantItems.map(x=>`<div class="important-card"><b>${x.name||x.id}</b></div>`).join('')
+        :'<div class="locked-card"><b>Поки пусто.</b><div class="small">Сюжетні речі зʼявляться тут і не займуть звичайні слоти.</div></div>'}
+    </div>
+  `;
+
+  root.querySelectorAll('[data-use]').forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.use,result=useItem(G,id);
+    if(!result.used){toast('НЕ ВИЙШЛО','Цей предмет зараз не використовується напряму.');return;}
+    G=result.state;await persist();renderGame();renderInventory();toast('ВИКОРИСТАНО',ITEM_DEFS[id]?.name||id);
+  });
+
+  root.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{
+    pendingQuickItem=b.dataset.quick;
+    $('#slotPickerOverlay').classList.remove('hidden');
+    renderSlotPicker();
+  });
+}
+
+function renderSlotPicker(){
+  const root=$('#slotPickerButtons');
+  const d=ITEM_DEFS[pendingQuickItem];
+  root.innerHTML=[0,1,2].map(i=>{
+    const current=G.quickSlots[i],c=current?ITEM_DEFS[current]:null;
+    return `<button data-slot="${i}">
+      <b>Слот ${i+1}</b><br>
+      <span class="small">${c?`${c.icon} ${c.name}`:'пусто'}</span>
+    </button>`;
+  }).join('');
+
+  root.querySelectorAll('[data-slot]').forEach(b=>b.onclick=async()=>{
+    assignQuickSlot(G,Number(b.dataset.slot),pendingQuickItem);
+    $('#slotPickerOverlay').classList.add('hidden');
+    pendingQuickItem=null;
+    await persist();
+    renderGame();
+    renderInventory();
+  });
+}
+
+function renderClothes(){
+  const root=$('#menuContent'),eq=equipmentTotals(G);
+  root.innerHTML=`
+    <div class="section-title"><h2>Шмотки</h2><span class="small">Броня +${eq.armor} · холод +${eq.warmth} · жара -${eq.heatBurden} · дощ +${eq.rainProtection}</span></div>
+    <p class="explain">Одяг тепер реально впливає на броню, холод, спеку й дощ. Речі одного слота замінюють одна одну.</p>
+    <div class="clothes-list">
+      ${G.ownedClothes.map(id=>{
+        const d=CLOTHES[id],on=G.equipment[d.slot]===id;
+        const chips=[`Броня +${d.armor}`,`Холод +${d.warmth}`];
+        if(d.heatBurden)chips.push(`Жара -${d.heatBurden}`);
+        if(d.rainProtection)chips.push(`Дощ +${d.rainProtection}`);
+        if(d.statMods)for(const [k,v] of Object.entries(d.statMods))chips.push(`${STAT_LABELS[k]} ${v>0?'+':''}${v}`);
+        return `<div class="clothes-card">
+          <div class="clothes-head"><div><b>${d.name}</b><div class="small">${d.note||''}</div></div><button data-equip="${id}" ${on?'disabled':''}>${on?'Вдягнено':'Вдягнути'}</button></div>
+          <div class="chips">${chips.map(x=>`<span class="chip">${x}</span>`).join('')}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  root.querySelectorAll('[data-equip]').forEach(b=>b.onclick=async()=>{
+    equip(G,b.dataset.equip);
+    await persist();
+    renderGame();
+    renderClothes();
+  });
+}
+
+function renderStats(){
+  const root=$('#menuContent'),mods=statModifiers(G);
+  root.innerHTML=`
+    <div class="section-title"><h2>Характеристики</h2></div>
+    <p class="explain">Кожна характеристика має рівень і 10 поділок прогресу. Заповнили всі 10 – отримуєте новий рівень. Тимчасові плюси й мінуси прогрес не змінюють. «Зараз» – реальне значення з усіма модифікаторами.</p>
+    <div class="stat-list">
+      ${STAT_KEYS.map(k=>{
+        const s=G.stats[k],mod=mods[k]||0,now=effectiveStat(G,k);
+        const pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<s.progress?'on':''}"></span>`).join('');
+        return `<div class="stat-card">
+          <div>
+            <div class="stat-name">${STAT_LABELS[k]}</div>
+            <div class="stat-desc">${STAT_DESCRIPTIONS[k]}</div>
+            <div class="stat-meta">Рівень ${s.level} · прогрес ${s.progress}/10${mod?` · тимчасово ${mod>0?'+':''}${mod}`:''} · <b>Зараз: ${now}</b></div>
+          </div>
+          <div class="stat-meter">${pips}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderStates(){
+  const root=$('#menuContent'),known=new Set(G.discoveredStatuses),ids=Object.keys(STATUS_DEFS);
+  root.innerHTML=`
+    <div class="section-title"><h2>Стани</h2><span class="small">Відкрито ${ids.filter(x=>known.has(x)).length}/${ids.length}</span></div>
+    <p class="explain">На головному екрані показуються тільки активні стани. Тут – довідник усіх станів, які ви вже відкрили.</p>
+    <div class="state-list">
+      ${ids.map(id=>{
         const d=STATUS_DEFS[id];
+        if(!known.has(id))return `<div class="locked-card"><b>???</b><div class="small">Ще не відкрито.</div></div>`;
         const effects=statusEffectText(id);
-        return known.has(id)
-          ?`<div class="book-row"><b>${d.name}</b><div class="small">${d.blurb}${effects?`<br><b>ефект:</b> ${effects}`:''}${d.persistentUnlock?'<br><b>особливий ефект:</b> відкриває секретні дії [ЄБАТОРІУМ].':''}<br><b>як позбутись:</b> ${d.remove}</div></div>`
-          :'<div class="book-row locked"><b>???</b><div class="small">Ще не відкрито.</div></div>';
-      }).join('');
-  }
-
-  if(currentTab==='weather'){
-    panel.innerHTML='<h2>Погода – технічний тест</h2><div class="summary">'+Object.entries(WEATHER_PRESETS).map(([id,w])=>`<button data-weather="${id}">${w.icon} ${w.label} · ${w.tempC}°C</button>`).join('')+'</div>';
-    panel.querySelectorAll('[data-weather]').forEach(b=>b.onclick=async()=>{
-      G.world.weather={...WEATHER_PRESETS[b.dataset.weather]};await autosave();render();
-    });
-  }
-
-  if(currentTab==='saves'){
-    renderSaves(panel);
-  }
+        return `<div class="state-card">
+          <div class="state-name">${d.name}</div>
+          <div class="state-blurb">${d.blurb}</div>
+          <div class="state-extra">${effects?`<b>ефект:</b> ${effects}<br>`:''}${d.persistentUnlock?'<b>особливий ефект:</b> відкриває секретні дії [ЄБАТОРІУМ].<br>':''}<b>як позбутись:</b> ${d.remove}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
 }
 
-async function renderSaves(panel){
-  const saves=await listManual(G.runId);
+function renderRelations(){
+  const root=$('#menuContent');
+  const rels=Object.entries(G.relationships).filter(([,r])=>r.known);
+
+  root.innerHTML=`
+    <div class="section-title"><h2>Стосунки</h2></div>
+    <p class="explain">Шкали 0–10. Не всі параметри персонажа відкриваються одразу, а гра не пояснює, яка саме ваша дія змінила ставлення.</p>
+    <div class="relation-list">
+      ${rels.map(([id,r])=>{
+        const discovered=r.discoveredParams||[];
+        return `<div class="relation-card">
+          <div class="relation-head"><b>${r.name}</b><span class="small">${discovered.length?'':'Ставлення: незрозуміле'}</span></div>
+          ${discovered.length?`<div class="relation-params">${discovered.map(k=>{
+            const v=r.values[k]??0;
+            return `<div class="relation-param"><span>${REL_LABELS[k]||k}</span><div class="rel-track"><div class="rel-fill" style="width:${v*10}%"></div></div><b>${v}/10</b></div>`;
+          }).join('')}</div>`:'<div class="small" style="margin-top:8px">Ви ще мало його знаєте.</div>'}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderMap(){
+  const root=$('#menuContent');
+  root.innerHTML=`
+    <div class="section-title"><h2>Карта</h2></div>
+    ${G.flags.mapUnlocked
+      ?'<div class="map-box"><div><b>Карта відкрита.</b><span class="small">Справжні точки додамо разом із переносом сюжету, щоб не спойлерити локації наперед.</span></div></div>'
+      :'<div class="map-box"><div><b>КАРТА ЩЕ НЕ ВІДКРИТА</b><span class="small">Коли герой її отримає по сюжету, вкладка оживе сама.</span></div></div>'}
+  `;
+}
+
+function renderShop(){
+  const root=$('#menuContent');
+  root.innerHTML=`
+    <div class="section-title"><h2>Крамничка</h2></div>
+    ${G.flags.shopUnlocked
+      ?'<div class="shop-box"><div><b>Крамничка відкрита.</b><span class="small">Асортимент і роботу за товари підключимо разом із бабою Галею.</span></div></div>'
+      :'<div class="shop-box"><div><b>КРАМНИЧКА ЩЕ НЕ ВІДКРИТА</b><span class="small">Вона привʼязана до сюжетної локації, тому зараз тут нічого не спойлеримо.</span></div></div>'}
+  `;
+}
+
+async function renderSaves(){
+  const root=$('#menuContent'),saves=await listManual(G.runId);
   const at=G.lastAutosaveAt?new Date(G.lastAutosaveAt).toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ще нема';
-  panel.innerHTML=`<h2>Збереження</h2><div class="small">Автосейв: ${at}. Після кожної дії, зміни шмоток і важливої системної зміни.</div>`+
-    saves.map(({slot,state})=>{
-      const tm=state?formatTime(state.clock.totalMinutes):null;
-      return `<div class="save-row"><b>Ручний слот ${slot}</b><div class="small">${state?`День ${tm.day} · ${tm.time}`:'Пусто'}</div><div class="run-actions"><button data-save="${slot}">Зберегти</button>${state?`<button data-load="${slot}">Завантажити</button>`:''}</div></div>`;
-    }).join('');
 
-  panel.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
-    await saveManual(G,Number(b.dataset.save));toast('ЗБЕРЕЖЕНО','Ручний слот '+b.dataset.save);renderTab();
+  root.innerHTML=`
+    <div class="section-title"><h2>Збереження</h2></div>
+    <p class="explain">Автосейв: ${at}. Він спрацьовує після важливих змін і дублюється у двох сховищах браузера.</p>
+    <div class="save-list">
+      ${saves.map(({slot,state})=>{
+        const s=state?normalizeState(state):null,tm=s?formatTime(s.clock.totalMinutes):null;
+        return `<div class="save-card">
+          <div class="save-head"><b>Ручний слот ${slot}</b><span class="small">${s?`День ${tm.day} · ${tm.time}`:'Пусто'}</span></div>
+          <div class="save-actions"><button data-save="${slot}">Зберегти</button>${s?`<button data-load="${slot}">Завантажити</button>`:''}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  root.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
+    await saveManual(G,Number(b.dataset.save));
+    toast('ЗБЕРЕЖЕНО',`Ручний слот ${b.dataset.save}`);
+    renderSaves();
   });
-  panel.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{
+
+  root.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{
     const state=await loadManual(G.runId,Number(b.dataset.load));
-    if(state){G=state;await autosave();render();}
+    if(!state)return;
+    G=normalizeState(state);
+    await persist();
+    renderGame();
+    renderSaves();
+    toast('ЗАВАНТАЖЕНО',`Ручний слот ${b.dataset.load}`);
   });
 }
 
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{currentTab=b.dataset.tab;renderTab()});
-$('#backToRuns').onclick=showStart;
+$('#newGameBtn').onclick=()=>openRunPicker('new');
+$('#continueBtn').onclick=()=>openRunPicker('continue');
+$('#menuBtn').onclick=()=>openMenu();
+$('#exitBtn').onclick=showStart;
+$('#closeMenuBtn').onclick=closeMenu;
+$('#openInventoryBtn').onclick=()=>openMenu('inventory');
+$('#openRelationsBtn').onclick=()=>openMenu('relations');
+$('#closeSlotPickerBtn').onclick=()=>{
+  $('#slotPickerOverlay').classList.add('hidden');
+  pendingQuickItem=null;
+};
+
+document.querySelectorAll('#menuTabs [data-tab]').forEach(b=>b.onclick=()=>{
+  currentTab=b.dataset.tab;
+  renderMenu();
+});
+
+$('#menuOverlay').addEventListener('click',e=>{
+  if(e.target===$('#menuOverlay'))closeMenu();
+});
+$('#slotPickerOverlay').addEventListener('click',e=>{
+  if(e.target===$('#slotPickerOverlay')){
+    $('#slotPickerOverlay').classList.add('hidden');
+    pendingQuickItem=null;
+  }
+});
 
 window.addEventListener('pagehide',()=>{if(G)emergencySaveRun(G)});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&G){emergencySaveRun(G);saveRun(G)}});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&G){
+    emergencySaveRun(G);
+    saveRun(G);
+  }
+});
 
 await showStart();

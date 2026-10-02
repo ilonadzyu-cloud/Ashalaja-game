@@ -4,61 +4,114 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b100d">
-  <title>Десь не там – ядро v0.4</title>
+  <title>Десь не там</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <main id="app">
-    <section id="startScreen" class="screen">
-      <div class="hero-card">
-        <div class="eyebrow">НОВЕ ЯДРО · v0.4</div>
+    <section id="startScreen" class="screen start-screen">
+      <div class="start-card">
+        <div class="version">v0.5</div>
         <h1>ДЕСЬ НЕ ТАМ</h1>
-        <p>Технічна збірка ядра. Сюжет переносимо тільки після стабільної перевірки механік.</p>
+        <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
+
+        <div class="start-actions">
+          <button id="newGameBtn" class="primary big">Нова гра</button>
+          <button id="continueBtn" class="big">Продовжити</button>
+        </div>
+
+        <div id="runPicker" class="run-picker hidden"></div>
+        <div id="storageStatus" class="storage-status small"></div>
       </div>
-      <section class="panel">
-        <h2>Проходження</h2>
-        <div id="runSlots"></div>
-        <div id="storageStatus" class="small"></div>
-      </section>
     </section>
 
-    <section id="gameScreen" class="screen hidden">
-      <header class="compactHud">
-        <div class="hud-main">
-          <div class="eyebrow">ДЕСЬ НЕ ТАМ · CORE v0.4</div>
-          <div class="hud-line">
+    <section id="gameScreen" class="game-shell hidden">
+      <header class="game-top">
+        <div class="top-left">
+          <div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.5</span></div>
+          <div class="world-line">
             <b id="timeLine"></b>
             <span id="weatherLine"></span>
             <span id="threatLine"></span>
           </div>
         </div>
-        <div id="miniNeeds" class="miniNeeds"></div>
-        <button id="backToRuns" class="ghost">Проходження</button>
+
+        <div id="miniNeeds" class="mini-needs"></div>
+
+        <div class="top-buttons">
+          <button id="menuBtn" class="icon-btn">☰ Меню</button>
+          <button id="exitBtn" class="icon-btn ghost">Вийти</button>
+        </div>
       </header>
 
-      <details class="panel" id="activeStatesBlock">
-        <summary>Активні стани <span id="activeStateCount"></span></summary>
-        <div id="activeStates"></div>
-      </details>
+      <section class="stage">
+        <div class="stage-image">
+          <div class="stage-placeholder">
+            <div class="stage-kicker">ГЛАВА 1</div>
+            <div class="stage-title">сюжет переносимо наступним етапом</div>
+          </div>
+        </div>
 
-      <section class="panel">
-        <div class="panel-head"><h2>Технічна сцена</h2><span class="badge">не сюжет</span></div>
-        <p id="sceneText">Тут перевіряємо, що рішення мають наслідки, але гра не підказує «вигідну» соціальну відповідь.</p>
-        <div id="actions" class="actions"></div>
+        <div class="quick-row">
+          <div class="quick-label">Швидкий доступ</div>
+          <div id="quickSlots" class="quick-slots"></div>
+        </div>
+
+        <details id="activeStatesBlock" class="active-states">
+          <summary>Активні стани <span id="activeStateCount"></span></summary>
+          <div id="activeStates"></div>
+        </details>
+
+        <article class="story-card">
+          <div class="story-kicker">ІНТЕРФЕЙС ГОТОВИЙ ДО ПЕРЕНОСУ СЮЖЕТУ</div>
+          <div id="storyText" class="story-text">
+            <p>Тут буде йти сама історія. Верх тепер займає мінімум місця, меню винесене окремо, а швидкі слоти й активні стани не лізуть у текст.</p>
+            <p>Наступним кроком сюди переносимо першу главу вже на новому ядрі.</p>
+          </div>
+          <div class="story-actions">
+            <button id="openInventoryBtn">Відкрити інвентар</button>
+            <button id="openRelationsBtn">Подивитись стосунки</button>
+          </div>
+        </article>
       </section>
-
-      <nav class="tabs">
-        <button class="tab active" data-tab="stats">Характеристики</button>
-        <button class="tab" data-tab="relations">Стосунки</button>
-        <button class="tab" data-tab="clothes">Шмотки</button>
-        <button class="tab" data-tab="states">Стани</button>
-        <button class="tab" data-tab="weather">Погода</button>
-        <button class="tab" data-tab="saves">Сейви</button>
-      </nav>
-      <section id="tabPanel" class="panel"></section>
-
-      <div id="toast" class="toast hidden"></div>
     </section>
+
+    <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">
+      <div class="menu-sheet">
+        <div class="menu-head">
+          <div>
+            <div class="menu-title">Меню</div>
+            <div id="menuMeta" class="small"></div>
+          </div>
+          <button id="closeMenuBtn" class="icon-btn">✕</button>
+        </div>
+
+        <nav id="menuTabs" class="menu-tabs">
+          <button data-tab="inventory" class="active">Інвентар</button>
+          <button data-tab="clothes">Шмотки</button>
+          <button data-tab="stats">Характеристики</button>
+          <button data-tab="states">Стани</button>
+          <button data-tab="relations">Стосунки</button>
+          <button data-tab="map">Карта</button>
+          <button data-tab="shop">Крамничка</button>
+          <button data-tab="saves">Збереження</button>
+        </nav>
+
+        <section id="menuContent" class="menu-content"></section>
+      </div>
+    </div>
+
+    <div id="slotPickerOverlay" class="mini-overlay hidden">
+      <div class="mini-dialog">
+        <div class="menu-head">
+          <div class="menu-title">У який швидкий слот?</div>
+          <button id="closeSlotPickerBtn" class="icon-btn">✕</button>
+        </div>
+        <div id="slotPickerButtons" class="slot-picker-buttons"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
   </main>
 
   <script type="module" src="./main.js"></script>
