@@ -1,15 +1,15 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js';
+} from './config.js?v=051';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=051';
 import {
-  normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
+  createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js';
+} from './engine.js?v=051';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js';
+} from './storage.js?v=051';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -44,7 +44,6 @@ async function persist(){
 
 async function createRun(run){
   await clearRun(run);
-  const {createInitialState}=await import('./engine.js');
   G=createInitialState(run);
   await saveRun(G);
   showGame();
@@ -71,9 +70,10 @@ async function renderStorageStatus(){
 }
 
 async function openRunPicker(mode){
-  const runs=await listRuns();
   const box=$('#runPicker');
   box.classList.remove('hidden');
+  box.innerHTML='<div class="run-card"><b>Завантажую слоти…</b></div>';
+  const runs=await listRuns();
 
   if(mode==='continue'){
     const saved=runs.filter(x=>x.state);
@@ -416,8 +416,20 @@ async function renderSaves(){
   });
 }
 
-$('#newGameBtn').onclick=()=>openRunPicker('new');
-$('#continueBtn').onclick=()=>openRunPicker('continue');
+$('#newGameBtn').onclick=()=>{
+  openRunPicker('new').catch(err=>{
+    console.error(err);
+    $('#runPicker').classList.remove('hidden');
+    $('#runPicker').innerHTML='<div class="run-card"><b>Не вдалося відкрити слоти.</b><div class="small">Оновіть сторінку. Якщо повториться – це вже конкретний баг, а не кнопка.</div></div>';
+  });
+};
+$('#continueBtn').onclick=()=>{
+  openRunPicker('continue').catch(err=>{
+    console.error(err);
+    $('#runPicker').classList.remove('hidden');
+    $('#runPicker').innerHTML='<div class="run-card"><b>Не вдалося прочитати сейви.</b></div>';
+  });
+};
 $('#menuBtn').onclick=()=>openMenu();
 $('#exitBtn').onclick=showStart;
 $('#closeMenuBtn').onclick=closeMenu;
@@ -451,4 +463,8 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-await showStart();
+showStart().catch(err=>{
+  console.error(err);
+  const status=$('#storageStatus');
+  if(status)status.textContent='Помилка запуску JS: '+(err?.message||String(err));
+});
