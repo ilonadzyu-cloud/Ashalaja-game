@@ -1,11 +1,11 @@
-import {STAT_KEYS} from './config.js?v=071';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=071';
+import {STAT_KEYS} from './config.js?v=080';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=080';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const clone=x=>JSON.parse(JSON.stringify(x));
 
 function defaultStats(){return {strength:{base:2},attention:{base:2},agility:{base:2},charisma:{base:2},pofigism:{base:2},ahui:{base:1}}}
 export function createInitialState(runId=1){return {
- schemaVersion:7,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
+ schemaVersion:8,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
  chapter:1,scene:'intro',story:{chapter:1,sceneId:'intro',entered:[],finished:false},clock:{totalMinutes:400},
  health:100,needs:{satiety:75,water:42,energy:65},wetness:0,stats:defaultStats(),
  activeStatuses:['hangover'],discoveredStatuses:['hangover'],statusTimers:{},unlocks:{yebatorium:false},
@@ -19,9 +19,14 @@ export function createInitialState(runId=1){return {
  hazards:{dynamic:{}},audit:[],world:{weather:{label:'Хмарно',icon:'☁️',tempC:16,wind:1,rain:0},location:'біля сільської хатини',environment:'outdoors'}
 }}
 export function normalizeState(raw){
- const base=createInitialState(Number(raw?.runId||1)),s={...base,...clone(raw||{})};s.schemaVersion=7;s.chapter=1;
+ const base=createInitialState(Number(raw?.runId||1)),s={...base,...clone(raw||{})};s.schemaVersion=8;
  s.clock={...base.clock,...(s.clock||{})};s.needs={...base.needs,...(s.needs||{})};s.unlocks={...base.unlocks,...(s.unlocks||{})};s.flags={...base.flags,...(s.flags||{})};s.equipment={...base.equipment,...(s.equipment||{})};
- s.story={...base.story,...(s.story||{})};s.story.chapter=1;s.story.entered=Array.isArray(s.story.entered)?s.story.entered:[];s.scene=s.story.sceneId||s.scene||'intro';s.story.sceneId=s.scene;
+ s.story={...base.story,...(s.story||{})};s.story.entered=Array.isArray(s.story.entered)?s.story.entered:[];s.scene=s.story.sceneId||s.scene||'intro';
+ // Міграція з v0.7.1: фінальний екран першої глави тепер є стартом другої.
+ if(s.scene==='chapter1Outro'||s.scene==='chapter1End')s.scene='ch2_intro';
+ s.story.sceneId=s.scene;
+ const detectedChapter=String(s.scene).startsWith('ch2_')?2:Number(s.story.chapter||s.chapter||1);
+ s.chapter=detectedChapter>=2?2:1;s.story.chapter=s.chapter;
  const old=s.stats||{};s.stats=defaultStats();for(const k of STAT_KEYS){const v=old[k];if(v&&typeof v==='object'){s.stats[k].base=Number(v.base??v.progress??base.stats[k].base)}else if(Number.isFinite(Number(v)))s.stats[k].base=Number(v);s.stats[k].base=clamp(s.stats[k].base,0,10)}
  s.activeStatuses=Array.isArray(s.activeStatuses)?s.activeStatuses:[];s.discoveredStatuses=Array.isArray(s.discoveredStatuses)?s.discoveredStatuses:[];s.statusTimers={...(s.statusTimers||{})};s.inventory=Array.isArray(s.inventory)?s.inventory:[];s.quickSlots=Array.isArray(s.quickSlots)?s.quickSlots.slice(0,3):[null,null,null];while(s.quickSlots.length<3)s.quickSlots.push(null);s.ownedClothes=Array.isArray(s.ownedClothes)?s.ownedClothes:base.ownedClothes;
  s.companions={...base.companions,...(s.companions||{})};s.relationships={...base.relationships,...(s.relationships||{})};s.memories={...base.memories,...(s.memories||{})};s.hazards={...base.hazards,...(s.hazards||{}),dynamic:{...(s.hazards?.dynamic||{})}};s.world={...base.world,...(s.world||{}),weather:{...base.world.weather,...(s.world?.weather||{})}};

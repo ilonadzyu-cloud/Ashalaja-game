@@ -1,4 +1,4 @@
-import {ITEM_DEFS} from './data.js?v=071';
+import {ITEM_DEFS} from './data.js?v=080';
 
 const img=n=>`./${n}`;
 const hero=(name='man_base.png',position='hero')=>({role:'hero',src:img(name),position});
@@ -406,23 +406,9 @@ ${birdCap(s)} теж нікуди не дівся.`,choices:s=>{
 – Дуже конкретно.
 
 – Як припре – згадаєш.`,choices:s=>{
-  const out=[];if(canFit(s,'holy_water'))out.push({id:'holy_take',label:'Взяти святу воду.',next:'chapter1Outro',hiddenEffects:[{type:'itemAdd',id:'holy_water',qty:1},{type:'flag',key:'holyWaterGift',value:true},{type:'relationship',person:'galina',key:'trust',value:1}]});out.push({id:'holy_refuse',label:'Не брати.',next:'chapter1Outro',hiddenEffects:[{type:'flag',key:'refusedHolyWater',value:true}]});return out
+  const out=[];if(canFit(s,'holy_water'))out.push({id:'holy_take',label:'Взяти святу воду.',next:'ch2_intro',hiddenEffects:[{type:'itemAdd',id:'holy_water',qty:1},{type:'flag',key:'holyWaterGift',value:true},{type:'relationship',person:'galina',key:'trust',value:1}]});out.push({id:'holy_refuse',label:'Не брати.',next:'ch2_intro',hiddenEffects:[{type:'flag',key:'refusedHolyWater',value:true}]});return out
  }},
 
- chapter1Outro:{...outside,id:'chapter1Outro',caption:'знову надворі',hud:img('portrait_base.png'),actors:[hero('man_local.png'),pigeon('pigeon_base.png')],onEnter:[{type:'companion',person:'evpapiy',known:true,active:true,state:'Знову з вами'},{type:'world',key:'location',value:'біля сільської хитини'},{type:'world',key:'environment',value:'outdoors'},{type:'flag',key:'mapUnlocked',value:true},{type:'flag',key:'shopUnlocked',value:true}],text:`Ви виходите від баби Галі в модних місцевих лахах. Сорочка трохи завелика, чоботи давлять, зате куртки з голубиним гівном на вас уже нема, а це вже хоч якийсь прогрес.
-
-На паркані сидить Євпапій і, судячи з недовольної морди, чекав саме на вас.
-
-– Ти знаєш, я тут подумав…
-
-– О, ти ше тут? Я думав, ти по своїх голубіних справах смотався.
-
-– Сам ти тут здохнеш.
-
-– ХА-ХА. Переживаєш?
-
-– Нє. Просто цікаво.`,choices:[{id:'outro_end',label:'Далі',next:'chapter1End'}]},
- chapter1End:{...outside,id:'chapter1End',caption:'кінець глави 1',hud:img('portrait_base.png'),actors:[hero('man_local.png'),pigeon('pigeon_base.png')],onEnter:[{type:'flag',key:'chapter1Complete',value:true}],text:`Глава 1 завершена.`,notice:{title:'ГОТОВО',body:'Сейв уже містить усі наслідки цього проходження. Можна підʼєднувати другу главу.'},end:true,choices:[]}
 };
 
 export function getChapter1Scene(state){const id=state?.story?.sceneId||state?.scene||CHAPTER1_START;return CHAPTER1_SCENES[id]||CHAPTER1_SCENES[CHAPTER1_START]}

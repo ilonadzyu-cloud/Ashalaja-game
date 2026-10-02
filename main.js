@@ -1,9 +1,15 @@
-import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=071';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=071';
-import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem} from './engine.js?v=071';
-import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js?v=071';
+import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=080';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=080';
+import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem} from './engine.js?v=080';
+import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js?v=080';
 import {audioManager} from './audio.js?v=071';
-import {getChapter1Scene,resolveSceneValue} from './chapter1.js?v=071';
+import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=080';
+import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=080';
+
+function getGameScene(state){
+  const id=state?.story?.sceneId||state?.scene||'intro';
+  return CHAPTER2_SCENES[id]||CHAPTER1_SCENES[id]||getChapter1Scene(state);
+}
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -164,6 +170,8 @@ async function beginGame(){
 function clearSfx(){for(const t of sfxTimers)clearTimeout(t);sfxTimers=[]}
 async function ensureSceneEntered(scene){
   const id=scene.id;
+  const chapter=Number(scene.chapter||G.chapter||1);
+  G.chapter=chapter;G.story.chapter=chapter;
   if(G.story.entered.includes(id))return false;
   G.story.entered.push(id);
   const world=resolveSceneValue(scene.world||[],G)||[];
@@ -182,9 +190,9 @@ function syncSceneAudio(scene){audioManager.setAtmosphere(scene?.atmosphere||'si
 async function renderGame(){
   if(!G)return;
   G=normalizeState(G);
-  let scene=getChapter1Scene(G);
+  let scene=getGameScene(G);
   await ensureSceneEntered(scene);
-  scene=getChapter1Scene(G);
+  scene=getGameScene(G);
   syncSceneAudio(scene);
   renderHeader();renderStage(scene);renderStory(scene);renderQuickSlots();renderActiveStates();
   if(!$('#menuOverlay').classList.contains('hidden'))renderMenu();
@@ -218,7 +226,7 @@ async function choose(choice){
 }
 
 function renderStory(scene){
-  $('#storyKicker').textContent=`ГЛАВА 1 · ${scene.caption||'ДЕСЬ НЕ ТАМ'}`;
+  $('#storyKicker').textContent=`ГЛАВА ${scene.chapter||G.chapter||1} · ${scene.caption||'ДЕСЬ НЕ ТАМ'}`;
   $('#storyText').innerHTML=paras(resolveSceneValue(scene.text||'',G));
   const n=resolveSceneValue(scene.notice||null,G);
   $('#storyExtras').innerHTML=n?`<div class="story-notice"><b>${esc(n.title)}</b><span>${esc(n.body)}</span></div>`:'';
@@ -266,7 +274,7 @@ function closeMenu(){
   document.body.classList.remove('menu-open');
   $('#menuOverlay').classList.add('hidden');
   $('#menuOverlay').setAttribute('aria-hidden','true');
-  syncSceneAudio(getChapter1Scene(G));
+  syncSceneAudio(getGameScene(G));
 }
 function renderMenu(){
   document.querySelectorAll('#menuTabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
@@ -372,7 +380,10 @@ function renderRelations(){
   $('#menuContent').innerHTML=`<div class="section-title"><h2>Стосунки</h2></div><div class="info-card">Усе має наслідки. І не завжди бути добреньким – добре. Персонажі памʼятають, що ви витворяли, але цифри й приховані наслідки гра вам не спойлерить.</div>${known.length?known.map(r=>`<article class="relation-card"><b>${esc(r.name)}</b><span>Що саме ця людина про вас думає, доведеться поняти по ходу.</span></article>`).join(''):'<div class="empty-state">Ше нема кого бісити.</div>'}`;
 }
 
-function renderMap(){$('#menuContent').innerHTML=`<div class="section-title"><h2>Карта</h2></div>${G.flags.mapUnlocked?`<div class="map-grid"><article><b>Хатина баби Галі</b><span>Тут ви вже були.</span></article><article><b>Криниця</b><span>Не плутати з калюжею.</span></article><article><b>Село</b><span>Далі відкриється в другій главі.</span></article></div>`:'<div class="locked-big">Карта ще не відкрита.</div>'}`}
+function renderMap(){
+  const extra=G.flags.chapter2Started?`<article><b>Двір з поминками</b><span>Тут зараз зібралось пів села.</span></article>${G.flags.heardShedBang?'<article><b>Сарай</b><span>Звідти стукало. І це вже не дуже смішно.</span></article>':''}`:'';
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Карта</h2></div>${G.flags.mapUnlocked?`<div class="map-grid"><article><b>Хатина баби Галі</b><span>Тут ви вже були.</span></article><article><b>Криниця</b><span>Не плутати з калюжею.</span></article><article><b>Село</b><span>Потроху перестає бути просто фоном.</span></article>${extra}</div>`:'<div class="locked-big">Карта ще не відкрита.</div>'}`}
+
 
 function renderShop(){
   const items=[['water',4],['aspirin',8],['onion',2]];
