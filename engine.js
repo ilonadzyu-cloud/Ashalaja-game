@@ -1,5 +1,5 @@
-import {STAT_KEYS,STAT_LABELS,NEED_LABELS} from './config.js?v=051';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=051';
+import {STAT_KEYS,STAT_LABELS,NEED_LABELS} from './config.js?v=052';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=052';
 
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const clone=x=>JSON.parse(JSON.stringify(x));

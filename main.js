@@ -1,15 +1,15 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=051';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=051';
+} from './config.js?v=052';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=052';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=051';
+} from './engine.js?v=052';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=051';
+} from './storage.js?v=052';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -23,6 +23,37 @@ function toast(title,body=''){
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.add('hidden'),2200);
+}
+
+
+function askConfirm({title='Почати заново?',text='',okText='Так, почати заново'}={}){
+  return new Promise(resolve=>{
+    const overlay=$('#confirmOverlay');
+    const titleEl=$('#confirmTitle');
+    const textEl=$('#confirmText');
+    const okBtn=$('#confirmOkBtn');
+    const cancelBtn=$('#confirmCancelBtn');
+
+    titleEl.textContent=title;
+    textEl.textContent=text;
+    okBtn.textContent=okText;
+
+    const finish=value=>{
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden','true');
+      okBtn.onclick=null;
+      cancelBtn.onclick=null;
+      overlay.onclick=null;
+      resolve(value);
+    };
+
+    okBtn.onclick=()=>finish(true);
+    cancelBtn.onclick=()=>finish(false);
+    overlay.onclick=e=>{ if(e.target===overlay)finish(false); };
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden','false');
+  });
 }
 
 function statusEffectText(id){
@@ -107,7 +138,14 @@ async function openRunPicker(mode){
 
   box.querySelectorAll('[data-new]').forEach(b=>b.onclick=async()=>{
     const run=Number(b.dataset.new),existing=await loadRun(run);
-    if(existing&&!confirm(`Стерти проходження ${run} і почати заново?`))return;
+    if(existing){
+      const ok=await askConfirm({
+        title:`Стерти проходження ${run}?`,
+        text:'Цей сейв буде видалено, і гра почнеться з самого початку.',
+        okText:'Так, почати заново'
+      });
+      if(!ok)return;
+    }
     await createRun(run);
   });
 }

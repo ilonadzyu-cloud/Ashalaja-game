@@ -157,3 +157,21 @@ button.ghost{background:transparent}
   .stat-card{grid-template-columns:1fr}
   .relation-param{grid-template-columns:100px 1fr 38px}
 }
+
+.confirm-overlay{
+  position:fixed;inset:0;z-index:90;background:#000b;
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.confirm-dialog{
+  width:min(430px,100%);background:#111813;border:1px solid #3a473d;
+  border-radius:18px;padding:18px;box-shadow:0 24px 70px #000b;
+}
+.confirm-kicker{
+  font-size:10px;letter-spacing:.12em;color:var(--accent);font-weight:900;margin-bottom:8px;
+}
+.confirm-title{font-size:21px;font-weight:950;line-height:1.15}
+.confirm-text{margin-top:9px;color:#cfc7bb;font-size:14px;line-height:1.5}
+.confirm-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:8px;margin-top:17px}
+button.danger{background:#472927;border-color:#71413d;color:#f1c6c1;font-weight:900}
+button.danger:hover{background:#59302d}
+@media(max-width:520px){.confirm-actions{grid-template-columns:1fr}}
