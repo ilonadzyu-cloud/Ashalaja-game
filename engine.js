@@ -39,7 +39,12 @@ export function normalizeState(raw){
      s.stats[k].level=1;s.stats[k].progress=clamp(Math.floor(Number(v)),0,9);
    }
  }
- s.activeStatuses=Array.isArray(s.activeStatuses)?s.activeStatuses:[];s.discoveredStatuses=Array.isArray(s.discoveredStatuses)?s.discoveredStatuses:[];s.statusTimers={...(s.statusTimers||{})};s.inventory=Array.isArray(s.inventory)?s.inventory:[];s.quickSlots=Array.isArray(s.quickSlots)?s.quickSlots.slice(0,3):[null,null,null];while(s.quickSlots.length<3)s.quickSlots.push(null);s.ownedClothes=Array.isArray(s.ownedClothes)?s.ownedClothes:base.ownedClothes;
+ s.activeStatuses=Array.isArray(s.activeStatuses)?s.activeStatuses:[];s.discoveredStatuses=Array.isArray(s.discoveredStatuses)?s.discoveredStatuses:[];s.statusTimers={...(s.statusTimers||{})};s.inventory=Array.isArray(s.inventory)?s.inventory:[];s.quickSlots=Array.isArray(s.quickSlots)?s.quickSlots.slice(0,3):[null,null,null];while(s.quickSlots.length<3)s.quickSlots.push(null);
+ const aliases={local_boots:'boots',local_waistcoat:'local_vest',modern_coat:'modern_jacket'};
+ s.ownedClothes=(Array.isArray(s.ownedClothes)?s.ownedClothes:base.ownedClothes).map(id=>aliases[id]||id).filter(id=>CLOTHES[id]);
+ for(const [slot,id] of Object.entries(s.equipment||{})){const mapped=aliases[id]||id;if(CLOTHES[mapped])s.equipment[slot]=mapped;else s.equipment[slot]=base.equipment[slot]}
+ if(s.flags.localClothes)for(const id of ['local_shirt','local_vest','local_pants','boots'])if(CLOTHES[id]&&!s.ownedClothes.includes(id))s.ownedClothes.push(id);
+ for(const id of Object.values(s.equipment||{}))if(CLOTHES[id]&&!s.ownedClothes.includes(id))s.ownedClothes.push(id);
  s.companions={...base.companions,...(s.companions||{})};s.relationships={...base.relationships,...(s.relationships||{})};s.memories={...base.memories,...(s.memories||{})};s.hazards={...base.hazards,...(s.hazards||{}),dynamic:{...(s.hazards?.dynamic||{})}};s.world={...base.world,...(s.world||{}),weather:{...base.world.weather,...(s.world?.weather||{})}};
  clearInvalidQuickSlots(s);return s
 }

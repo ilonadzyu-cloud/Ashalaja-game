@@ -302,9 +302,19 @@ function clothingBonusText(d){
 
 function renderClothes(){
   const root=$('#menuContent'),tot=equipmentTotals(G);
-  root.innerHTML=`<div class="section-title"><h2>Шмотки</h2></div><div class="clothes-total"><span><b>Броня</b> ${tot.armor}</span><span><b>Тепло</b> ${tot.warmth}</span><span><b>Захист від дощу</b> ${tot.rainProtection}</span></div><div class="clothes-shell"><div class="clothes-hero"><img src="${heroForClothes()}" alt="Герой"><div class="equipped-list">${Object.values(G.equipment).map(id=>`<span>${esc(CLOTHES[id]?.name||id)}</span>`).join('')}</div></div><div class="clothes-list">${G.ownedClothes.map(id=>{const d=CLOTHES[id],on=G.equipment[d.slot]===id;return `<article class="clothes-card ${on?'equipped':''}"><b>${esc(d.name)}</b>${d.note?`<span>${esc(d.note)}</span>`:''}<small>${esc(clothingBonusText(d))}</small><button data-equip="${id}" ${on?'disabled':''}>${on?'Вдягнено':'Вдягнути'}</button></article>`}).join('')}</div></div>`;
+  const equippedIds=Object.values(G.equipment||{}).filter(id=>CLOTHES[id]);
+  const ownedIds=[...new Set([...(Array.isArray(G.ownedClothes)?G.ownedClothes:[]),...equippedIds])].filter(id=>CLOTHES[id]);
+  if(G.flags?.localClothes){
+    for(const id of ['local_shirt','local_vest','local_pants','boots'])if(CLOTHES[id]&&!ownedIds.includes(id))ownedIds.push(id);
+  }
+  if(!ownedIds.length){
+    for(const id of ['modern_shirt','modern_jacket','modern_pants','modern_boots'])if(CLOTHES[id])ownedIds.push(id);
+  }
+  root.innerHTML=`<div class="section-title"><h2>Шмотки</h2></div><div class="clothes-total"><span><b>Броня</b> ${tot.armor}</span><span><b>Тепло</b> ${tot.warmth}</span><span><b>Захист від дощу</b> ${tot.rainProtection}</span></div><div class="clothes-shell"><div class="clothes-hero"><img src="${heroForClothes()}" alt="Герой"><div class="equipped-list">${equippedIds.map(id=>`<span>${esc(CLOTHES[id].name)}</span>`).join('')}</div></div><div class="clothes-list">${ownedIds.map(id=>{const d=CLOTHES[id];const on=G.equipment?.[d.slot]===id;return `<article class="clothes-card ${on?'equipped':''}"><b>${esc(d.name)}</b>${d.note?`<span>${esc(d.note)}</span>`:''}<small>${esc(clothingBonusText(d))}</small><button data-equip="${id}" ${on?'disabled':''}>${on?'Вдягнено':'Вдягнути'}</button></article>`}).join('')}</div></div>`;
   root.querySelectorAll('[data-equip]').forEach(b=>b.onclick=async()=>{
-    const before=new Set(G.activeStatuses);equip(G,b.dataset.equip);const after=new Set(G.activeStatuses),ev=[];
+    const before=new Set(G.activeStatuses||[]);
+    equip(G,b.dataset.equip);
+    const after=new Set(G.activeStatuses||[]),ev=[];
     for(const id of after)if(!before.has(id))ev.push({type:'statusAdded',id});
     for(const id of before)if(!after.has(id))ev.push({type:'statusRemoved',id});
     notifyEvents(ev);await persist();await renderGame();renderClothes();
@@ -379,7 +389,7 @@ function renderCompanions(){
 
 function renderRelations(){
   const known=Object.values(G.relationships).filter(r=>r.known);
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Стосунки</h2></div><div class="info-card">Усе має наслідки. І не завжди бути добреньким – добре. Персонажі памʼятають, що ви витворяли, але цифри й приховані наслідки гра вам не спойлерить.</div>${known.length?known.map(r=>`<article class="relation-card"><b>${esc(r.name)}</b><span>Що саме ця людина про вас думає, доведеться поняти по ходу.</span></article>`).join(''):'<div class="empty-state">Ше нема кого бісити.</div>'}`;
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Стосунки</h2></div><div class="info-card">Усе має наслідки. І не завжди бути добреньким – добре. Персонажі памʼятають, що ви витворяли, але цифри й приховані наслідки гра вам не спойлерить.</div>${known.length?known.map(r=>`<article class="relation-card"><b>${esc(r.name)}</b><span>Що саме цей персонаж про вас думає, доведеться поняти по ходу.</span></article>`).join(''):'<div class="empty-state">Ше нема кого бісити.</div>'}`;
 }
 
 function renderMap(){
