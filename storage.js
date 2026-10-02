@@ -1,4 +1,4 @@
-import {SAVE_NAMESPACE} from './config.js?v=053';
+import {SAVE_NAMESPACE} from './config.js?v=054';
 
 const DB_NAME='des-ne-tam-persistence';
 const STORE='saves';

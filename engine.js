@@ -1,5 +1,5 @@
-import {STAT_KEYS,STAT_LABELS,NEED_LABELS} from './config.js?v=053';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=053';
+import {STAT_KEYS,STAT_LABELS,NEED_LABELS} from './config.js?v=054';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=054';
 
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const clone=x=>JSON.parse(JSON.stringify(x));
@@ -17,6 +17,15 @@ export function createInitialState(runId=1){
     quickSlots:[null,null,null],
     ownedClothes:['local_shirt','local_jacket','boots','sheepskin','leather_vest'],
     equipment:{body:'local_shirt',outer:'local_jacket',feet:'boots'},
+    companions:{
+      evpapiy:{
+        name:'Євпапій',
+        known:true,
+        active:false,
+        portrait:'./evpapiy.png',
+        state:'Не з вами'
+      }
+    },
     relationships:{
       evpapiy:{name:'Євпапій',known:true,values:{trust:2,offense:0,greed:5,bullshit:7},discoveredParams:[]}
     },
@@ -38,6 +47,7 @@ export function normalizeState(raw){
   s.flags={...base.flags,...(s.flags||{})};
   s.hazards={...base.hazards,...(s.hazards||{}),dynamic:{...(s.hazards?.dynamic||{})}};
   s.world={...base.world,...(s.world||{}),weather:{...base.world.weather,...(s.world?.weather||{})}};
+  s.companions={...base.companions,...(s.companions||{})};
   s.relationships={...base.relationships,...(s.relationships||{})};
   s.inventory=Array.isArray(s.inventory)?s.inventory:[];
   s.importantItems=Array.isArray(s.importantItems)?s.importantItems:[];
@@ -50,6 +60,9 @@ export function normalizeState(raw){
 
   for(const key of STAT_KEYS){
     s.stats[key]={...base.stats[key],...(s.stats[key]||{})};
+  }
+  for(const [id,compBase] of Object.entries(base.companions)){
+    s.companions[id]={...compBase,...(s.companions[id]||{})};
   }
   for(const [id,relBase] of Object.entries(base.relationships)){
     const rel=s.relationships[id]||relBase;

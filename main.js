@@ -1,16 +1,16 @@
 import {
   STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS,REL_LABELS
-} from './config.js?v=053';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=053';
+} from './config.js?v=054';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=054';
 import {
   createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,
   statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem
-} from './engine.js?v=053';
+} from './engine.js?v=054';
 import {
   listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,
   emergencySaveRun,storageCapabilities
-} from './storage.js?v=053';
-import {audioManager} from './audio.js?v=053';
+} from './storage.js?v=054';
+import {audioManager} from './audio.js?v=054';
 
 const $=s=>document.querySelector(s);
 let G=null;
@@ -168,7 +168,10 @@ function renderGame(){
     ['😴','Бадьорість',G.needs.energy]
   ];
   $('#miniNeeds').innerHTML=needs.map(([icon,label,value])=>`
-    <div class="need-chip"><b>${icon} ${label}</b><span>${icon} ${Math.round(value)}%</span></div>
+    <div class="need-chip" title="${label}" aria-label="${label}: ${Math.round(value)}%">
+      <span class="need-icon">${icon}</span>
+      <span class="need-value">${Math.round(value)}%</span>
+    </div>
   `).join('');
 
   $('#activeStateCount').textContent=`(${G.activeStatuses.length})`;
@@ -233,6 +236,7 @@ function renderMenu(){
   if(currentTab==='clothes')renderClothes();
   if(currentTab==='stats')renderStats();
   if(currentTab==='states')renderStates();
+  if(currentTab==='companions')renderCompanions();
   if(currentTab==='relations')renderRelations();
   if(currentTab==='map')renderMap();
   if(currentTab==='shop')renderShop();
@@ -376,6 +380,48 @@ function renderStates(){
         </div>`;
       }).join('')}
     </div>
+  `;
+}
+
+
+function renderCompanions(){
+  const root=$('#menuContent');
+  const companions=Object.entries(G.companions||{}).filter(([,c])=>c.known);
+  const active=companions.filter(([,c])=>c.active);
+  const known=companions.filter(([,c])=>!c.active);
+
+  const card=([id,c])=>`
+    <div class="companion-card ${c.active?'active':''}">
+      <div class="companion-portrait-wrap">
+        <img class="companion-portrait" src="${c.portrait||'./evpapiy.png'}" alt="${c.name}">
+      </div>
+      <div class="companion-copy">
+        <div class="companion-head">
+          <b>${c.name}</b>
+          <span class="companion-badge ${c.active?'active':''}">${c.active?'З вами':(c.state||'Не з вами')}</span>
+        </div>
+        <div class="small">${c.active?'Цей персонаж зараз іде разом із героєм.':'Персонаж уже відомий, але зараз не є активним компаньйоном.'}</div>
+      </div>
+    </div>
+  `;
+
+  root.innerHTML=`
+    <div class="section-title"><h2>Компаньйони</h2></div>
+    <p class="explain">Тут тільки ті персонажі, які можуть іти разом із героєм. Стосунки з ними лишаються в окремій вкладці.</p>
+
+    <div class="companion-section">
+      <h3>Зараз із вами</h3>
+      <div class="companions-grid">
+        ${active.length?active.map(card).join(''):'<div class="locked-card"><b>Поки нікого.</b><div class="small">Коли хтось реально приєднається по сюжету, його портрет зʼявиться тут.</div></div>'}
+      </div>
+    </div>
+
+    ${known.length?`
+      <div class="companion-section">
+        <h3>Відомі компаньйони</h3>
+        <div class="companions-grid">${known.map(card).join('')}</div>
+      </div>
+    `:''}
   `;
 }
 
