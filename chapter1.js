@@ -1,4 +1,4 @@
-import {ITEM_DEFS} from './data.js?v=070';
+import {ITEM_DEFS} from './data.js?v=071';
 
 const img=n=>`./${n}`;
 const hero=(name='man_base.png',position='hero')=>({role:'hero',src:img(name),position});

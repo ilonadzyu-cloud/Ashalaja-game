@@ -2,15 +2,15 @@ export const STATUS_DEFS={
   hangover:{
     name:'ЖОСТКИЙ БУДУНЯРА',portrait:'./portrait_base.png',blurb:'Бувало і краще.',
     mods:{attention:-2,agility:-1,pofigism:2},drainMultipliers:{water:1.25},
-    extraEffects:['Вода витрачається на 25% швидше.'],remove:'поїсти, попити й трохи прийти до тями.'
+    extraEffects:['вода витрачається швидше'],remove:'поїсти, попити й трохи прийти до тями.'
   },
   pigeonHumiliated:{
-    name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',portrait:'./portrait_angry.png',blurb:'Ну буває.',
-    mods:{charisma:-1,pofigism:1},remove:'змінити замизгану куртку.'
+    name:'СРАНИЙ ГОЛУБ ВАС ПРИНИЗИВ',portrait:'./portrait_angry.png',blurb:'Вас обісрав голуб. От і все.',
+    mods:{charisma:-1,pofigism:1},remove:'випрати або змінити одяг.'
   },
   yebatorium:{
     name:'ОСТАНОВОЧКА ЄБАТОРІУМ',portrait:'./portrait_ahui.png',
-    blurb:'Після такого ви вже готові перевіряти будь-яку хуйню.',
+    blurb:'Ви не готові це коментувати.',
     mods:{attention:1,pofigism:1,ahui:1},durationMinutes:30,persistentUnlock:'yebatorium',
     remove:'сам пройде через 30 ігрових хвилин.'
   },
@@ -28,13 +28,13 @@ export const STATUS_DEFS={
   wet:{name:'ПРОМОК',portrait:'./portrait_worry.png',blurb:'Одяг мокрий і це вже починає бісити.',mods:{},remove:'висохнути або змінити мокрий одяг.'},
   cold:{name:'ЗМЕРЗ',portrait:'./portrait_tired.png',blurb:'Пальці вже не дуже слухаються.',mods:{agility:-1},remove:'зігрітись і висохнути.'},
   overheated:{name:'ПЕРЕГРІВ',portrait:'./portrait_tired.png',blurb:'Жарко пиздець.',mods:{attention:-1},remove:'піти в тінь, охолонути й попити.'},
-  tired:{name:'ЗАЄБАВСЯ',portrait:'./portrait_tired.png',blurb:'Спати вже хочеться.',mods:{attention:-1,agility:-1},remove:'відпочити.'},
-  hungry:{name:'ГОЛОДНИЙ',portrait:'./portrait_tired.png',blurb:'Їсти хочеться пиздець.',mods:{strength:-1,attention:-1},remove:'поїсти.'},
-  thirsty:{name:'СУШНЯК',portrait:'./portrait_worry.png',blurb:'В роті пустеля.',mods:{attention:-1},remove:'попити.'},
-  angry:{name:'ЗЛИЙ ЯК СОБАКА',portrait:'./portrait_angry.png',blurb:'Хтось явно дістав.',mods:{strength:1,charisma:-1},remove:'коли попустить.'},
-  suspicious:{name:'ШОСЬ ТУТ НЕ ТАК',portrait:'./portrait_suspicious.png',blurb:'Підозріло.',mods:{attention:1},remove:'коли розберетесь або переключитесь.'},
-  skunk:{name:'ДИКИЙ СКУНС',portrait:'./portrait_angry.png',blurb:'Від вас несе так, що люди самі тримають дистанцію.',mods:{charisma:-2},remove:'помитись і змінити одяг.'},
-  tipsy:{name:'ПІД ШОФЕ',portrait:'./portrait_ahui.png',blurb:'Уже веселіше. Це не значить, що краще.',mods:{pofigism:2,charisma:1,attention:-1},durationMinutes:90,remove:'сам пройде через 90 ігрових хвилин.'}
+  tired:{name:'ЗАЄБАВСЯ',portrait:'./portrait_tired.png',blurb:'Сил нема навіть ахуєвати.',mods:{attention:-1,agility:-1},remove:'поспати.'},
+  hungry:{name:'ГОЛОДНИЙ',portrait:'./portrait_tired.png',blurb:'Їжа зараз була б дуже кстаті.',mods:{attention:-1},remove:'поїсти.'},
+  thirsty:{name:'СУШНЯК',portrait:'./portrait_worry.png',blurb:'Пити хочеться пиздець.',mods:{attention:-1},remove:'випити води.'},
+  angry:{name:'ЗЛИЙ',portrait:'./portrait_angry.png',blurb:'Настрій когось вʼєбати.',mods:{strength:2,pofigism:1,charisma:-2},remove:'заспокоїтись.'},
+  suspicious:{name:'СОБАКА-ПОДОЗРЄВАКА',portrait:'./portrait_suspicious.png',blurb:'Шось тут не так.',mods:{attention:2,charisma:-1},remove:'коли відпустить.'},
+  skunk:{name:'ДИКИЙ СКУНС',portrait:'./portrait_tired.png',blurb:'Помитись було б непогано.',mods:{pofigism:1,charisma:-3},remove:'нормально помитись.'},
+  tipsy:{name:'ПІД ГРАДУСОМ',portrait:'./portrait_base.png',blurb:'Ви під градусом.',mods:{pofigism:2,charisma:1,attention:-1,agility:-1},durationMinutes:90,remove:'90 ігрових хвилин після останньої горілки.'}
 };
 
 export const CLOTHES={

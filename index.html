@@ -5,53 +5,75 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b100d">
   <title>Десь не там</title>
-  <link rel="stylesheet" href="./styles.css?v=070">
+  <link rel="stylesheet" href="./styles.css?v=071">
 </head>
 <body>
 <main id="app">
   <section id="startScreen" class="screen start-screen">
     <div class="start-card">
-      <div class="version">v0.7.0</div>
+      <div class="version">v0.7.1</div>
       <h1>ДЕСЬ НЕ ТАМ</h1>
       <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
-      <div class="start-actions">
+      <div id="startActions" class="start-actions">
         <button id="newGameBtn" class="primary big">Нова гра</button>
         <button id="continueBtn" class="big">Продовжити</button>
       </div>
       <div id="runPicker" class="run-picker hidden"></div>
-      <button id="backStartBtn" class="ghost tiny">На головну</button>
-      <div id="storageStatus" class="storage-status small"></div>
+      <div id="storageStatus" class="storage-status small hidden"></div>
     </div>
   </section>
 
   <section id="howToScreen" class="screen howto-screen hidden">
     <div class="howto-wrap">
-      <div class="howto-version">v0.7.0</div>
-      <h1>ПЕРЕД ТИМ, ЯК ЛІЗТИ В ЦЕ СЕЛО</h1>
-      <div class="howto-grid">
-        <article><b>Вибори запамʼятовуються.</b><span>Не всі наслідки гра покаже одразу. Персонажі теж не забувають, шо ви робили.</span></article>
-        <article><b>Організм у вас один.</b><span>Вода, їжа, бадьорість, погода, мокрий одяг і температура реально впливають на героя.</span></article>
-        <article><b>Стани міняють характеристики.</b><span>У характеристиках біле – база, червоне – тимчасовий мінус, зелене – тимчасовий плюс.</span></article>
-        <article><b>Інвентар має значення.</b><span>Предмети займають слоти, частину можна використати напряму, частина знадобиться в сюжеті.</span></article>
+      <div class="howto-head">
+        <div class="howto-version">v0.7.1</div>
+        <h1 class="howto-title">ДЕСЬ НЕ ТАМ</h1>
+        <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
+        <div class="howto-kicker">ПЕРЕД ТИМ, ЯК ЛІЗТИ В ЦЕ СЕЛО</div>
       </div>
-      <button id="beginGameBtn" class="primary big">Почати гру</button>
+
+      <div class="howto-grid">
+        <article class="howto-card howto-lead">
+          <h2>Кожне ваше рішення має значення.</h2>
+          <p>Вибір може змінити стан героя, вплинути на ставлення до вас або вилізти боком значно пізніше. Не все корисне виявиться добрим, а не кожна хуйова ідея закінчиться хуйово.</p>
+          <p>Стани й характеристики можуть відкривати нові варіанти в діалогах і діях.</p>
+          <p>Будьте обережні – не все те, чим здається.</p>
+        </article>
+        <article class="howto-card">
+          <h2>Стани</h2>
+          <p>Стани змінюють характеристики героя. Деякі можна зняти. Деякі самі пройдуть. А деякі будуть з вами, поки ви не розгребете ту хуйню, яку наробили.</p>
+        </article>
+        <article class="howto-card">
+          <h2>Характеристики</h2>
+          <p>Сила, уважність, спритність, харизма й інші характеристики ростуть по ходу гри. Вони впливають на перевірки й інколи відкривають варіанти, яких ви інакше навіть не побачите.</p>
+        </article>
+        <article class="howto-card">
+          <h2>Інвентар і виживання</h2>
+          <p>Їжа, вода, бадьорість, здоровʼя, мокрий одяг і речі в кишенях – це не декор. Те, що ви взяли, зʼїли, вдягнули або лишили лежати, може знадобитися далеко не одразу.</p>
+        </article>
+        <article class="howto-card">
+          <h2>Памʼять персонажів</h2>
+          <p>Персонажі пам’ятатимуть, що ви перед ними витворяли. Не кожен наслідок вилізе одразу.</p>
+        </article>
+      </div>
+      <div class="howto-start"><button id="beginGameBtn" class="primary big">Почати гру</button></div>
     </div>
   </section>
 
   <section id="gameScreen" class="game-shell hidden">
     <header class="game-top">
       <div class="top-copy">
-        <div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.7.0</span></div>
+        <div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.7.1</span></div>
         <div class="world-line"><b id="timeLine"></b><span id="weatherLine"></span><span id="threatLine"></span></div>
       </div>
-      <div id="miniNeeds" class="mini-needs"></div>
+      <div id="miniNeeds" class="mini-needs" role="button" tabindex="0" aria-label="Відкрити потреби"></div>
       <div class="top-buttons"><button id="menuBtn" class="icon-btn">☰ Меню</button><button id="exitBtn" class="icon-btn ghost">Вийти</button></div>
     </header>
 
     <section class="stage">
       <div id="stageImage" class="stage-image"></div>
       <div class="quick-row"><div class="quick-label">Швидкий доступ</div><div id="quickSlots" class="quick-slots"></div></div>
-      <details class="active-states"><summary>Активні стани <span id="activeStateCount"></span></summary><div id="activeStates"></div></details>
+      <details class="active-states" open><summary>Активні стани <span id="activeStateCount"></span></summary><div id="activeStates"></div></details>
       <article class="story-card">
         <div id="storyKicker" class="story-kicker">ГЛАВА 1</div>
         <div id="storyText" class="story-text"></div>
@@ -61,19 +83,47 @@
     </section>
   </section>
 
-  <div id="menuOverlay" class="menu-overlay hidden">
-    <div class="menu-sheet">
-      <div class="menu-head"><div><div class="menu-title">Меню</div><div id="menuMeta" class="small"></div></div><button id="closeMenuBtn" class="icon-btn">✕</button></div>
+  <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">
+    <div class="menu-sheet" role="dialog" aria-modal="true" aria-label="Меню гри">
+      <div class="menu-head"><div><div class="menu-title">Меню</div><div id="menuMeta" class="small"></div></div><button id="closeMenuBtn" class="icon-btn">Закрити</button></div>
       <nav id="menuTabs" class="menu-tabs">
-        <button data-tab="inventory" class="active">Інвентар</button><button data-tab="clothes">Шмотки</button><button data-tab="stats">Характеристики</button><button data-tab="states">Стани</button><button data-tab="companions">Компаньйони</button><button data-tab="relations">Стосунки</button><button data-tab="map">Карта</button><button data-tab="shop">Крамничка</button><button data-tab="settings">⚙️ Налаштування</button>
+        <button data-tab="states">Стани</button>
+        <button data-tab="stats">Характеристики</button>
+        <button data-tab="needs">Потреби</button>
+        <button data-tab="inventory">Інвентар</button>
+        <button data-tab="clothes">Шмотки</button>
+        <button data-tab="companions">Компаньйони</button>
+        <button data-tab="relations">Стосунки</button>
+        <button data-tab="map">Карта</button>
+        <button data-tab="shop">Крамничка</button>
+        <button data-tab="settings">⚙️ Налаштування</button>
       </nav>
       <section id="menuContent" class="menu-content"></section>
     </div>
   </div>
 
-  <div id="stateOverlay" class="state-overlay hidden"><div class="state-dialog"><div class="state-dialog-title">Стан</div><div id="statePopup"></div><button id="stateOkBtn" class="primary state-ok">Поняв</button></div></div>
+  <div id="stateOverlay" class="state-overlay hidden" aria-hidden="true">
+    <div class="state-dialog" role="dialog" aria-modal="true">
+      <div class="state-dialog-title">НОВИЙ СТАН</div>
+      <div id="statePopup"></div>
+      <button id="stateOkBtn" class="primary state-ok">Поняв</button>
+    </div>
+  </div>
+
+  <div id="confirmOverlay" class="confirm-overlay hidden" aria-hidden="true">
+    <div class="confirm-dialog" role="dialog" aria-modal="true">
+      <div class="confirm-kicker">НОВА ГРА</div>
+      <div id="confirmTitle" class="confirm-title">Почати заново?</div>
+      <div id="confirmText" class="confirm-text"></div>
+      <div class="confirm-actions">
+        <button id="confirmCancelBtn" class="ghost">Скасувати</button>
+        <button id="confirmOkBtn" class="danger">Так, почати заново</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden"></div>
 </main>
-<script type="module" src="./main.js?v=070"></script>
+<script type="module" src="./main.js?v=071"></script>
 </body>
 </html>
