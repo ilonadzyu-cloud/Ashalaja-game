@@ -1,10 +1,10 @@
-import {ITEM_DEFS} from './data.js?v=081';
-import {effectiveStat} from './engine.js?v=081';
+import {ITEM_DEFS} from './data.js?v=083';
+import {effectiveStat} from './engine.js?v=083';
 
 const img=n=>`./${n}`;
 const hero=(name='ch2_hero_local.png',position='hero')=>({role:'hero',src:img(name),position});
 const pigeon=(name='pigeon_base.png',position='pigeon')=>({role:'pigeon',src:img(name),position});
-const hood=()=>({role:'npc',src:img('ch2_unknown.png'),position:'npc'});
+const hood=()=>({role:'npc',src:img('ch2_unknown_v2.png'),position:'npc'});
 const yard={background:img('ch2_wake_yard.jpg'),atmosphere:'village',chapter:2,world:[{type:'world',key:'environment',value:'outdoors'},{type:'world',key:'location',value:'двір з поминками'}]};
 const shed={background:img('ch2_shed.jpg'),atmosphere:'village',chapter:2,world:[{type:'world',key:'environment',value:'outdoors'},{type:'world',key:'location',value:'за сараєм'}]};
 const table={background:img('ch2_table.jpg'),atmosphere:'village',chapter:2,world:[{type:'world',key:'environment',value:'outdoors'},{type:'world',key:'location',value:'за поминальним столом'}]};

@@ -1,11 +1,11 @@
-import {STAT_KEYS} from './config.js?v=081';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=081';
+import {STAT_KEYS} from './config.js?v=083';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=083';
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const clone=x=>JSON.parse(JSON.stringify(x));
 
 function defaultStats(){return {strength:{level:1,progress:2},attention:{level:1,progress:2},agility:{level:1,progress:2},charisma:{level:1,progress:2},pofigism:{level:1,progress:2},ahui:{level:1,progress:1}}}
 export function createInitialState(runId=1){return {
- schemaVersion:9,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
+ schemaVersion:10,runId,createdAt:Date.now(),updatedAt:Date.now(),lastAutosaveAt:null,
  chapter:1,scene:'intro',story:{chapter:1,sceneId:'intro',entered:[],finished:false},clock:{totalMinutes:400},
  health:100,needs:{satiety:75,water:42,energy:65},wetness:0,stats:defaultStats(),
  activeStatuses:['hangover'],discoveredStatuses:['hangover'],statusTimers:{},unlocks:{yebatorium:false},
@@ -19,7 +19,7 @@ export function createInitialState(runId=1){return {
  hazards:{dynamic:{}},audit:[],world:{weather:{label:'Хмарно',icon:'☁️',tempC:16,wind:1,rain:0},location:'біля сільської хатини',environment:'outdoors'}
 }}
 export function normalizeState(raw){
- const base=createInitialState(Number(raw?.runId||1)),s={...base,...clone(raw||{})};s.schemaVersion=9;
+ const base=createInitialState(Number(raw?.runId||1)),s={...base,...clone(raw||{})};s.schemaVersion=10;
  s.clock={...base.clock,...(s.clock||{})};s.needs={...base.needs,...(s.needs||{})};s.unlocks={...base.unlocks,...(s.unlocks||{})};s.flags={...base.flags,...(s.flags||{})};s.equipment={...base.equipment,...(s.equipment||{})};
  s.story={...base.story,...(s.story||{})};s.story.entered=Array.isArray(s.story.entered)?s.story.entered:[];s.scene=s.story.sceneId||s.scene||'intro';
  // Міграція з v0.7.1: фінальний екран першої глави тепер є стартом другої.
@@ -41,10 +41,21 @@ export function normalizeState(raw){
  }
  s.activeStatuses=Array.isArray(s.activeStatuses)?s.activeStatuses:[];s.discoveredStatuses=Array.isArray(s.discoveredStatuses)?s.discoveredStatuses:[];s.statusTimers={...(s.statusTimers||{})};s.inventory=Array.isArray(s.inventory)?s.inventory:[];s.quickSlots=Array.isArray(s.quickSlots)?s.quickSlots.slice(0,3):[null,null,null];while(s.quickSlots.length<3)s.quickSlots.push(null);
  const aliases={local_boots:'boots',local_waistcoat:'local_vest',modern_coat:'modern_jacket'};
- s.ownedClothes=(Array.isArray(s.ownedClothes)?s.ownedClothes:base.ownedClothes).map(id=>aliases[id]||id).filter(id=>CLOTHES[id]);
- for(const [slot,id] of Object.entries(s.equipment||{})){const mapped=aliases[id]||id;if(CLOTHES[mapped])s.equipment[slot]=mapped;else s.equipment[slot]=base.equipment[slot]}
- if(s.flags.localClothes)for(const id of ['local_shirt','local_vest','local_pants','boots'])if(CLOTHES[id]&&!s.ownedClothes.includes(id))s.ownedClothes.push(id);
- for(const id of Object.values(s.equipment||{}))if(CLOTHES[id]&&!s.ownedClothes.includes(id))s.ownedClothes.push(id);
+ const modernSet=['modern_shirt','modern_jacket','modern_pants','modern_boots'];
+ const localSet=['local_shirt','local_vest','local_pants','boots'];
+ const localMilestones=new Set(['galinaChanged','galinaMurderScene','galinaVictim','galinaCalm','galinaGarlic','galinaPotion','galinaHolyWater','chapter1Outro','chapter1End']);
+ const reachedLocalClothes=String(s.scene||'').startsWith('ch2_')||localMilestones.has(s.scene)||(s.story.entered||[]).some(id=>localMilestones.has(id));
+ s.flags.localClothes=Boolean(reachedLocalClothes);
+ const allowed=new Set(reachedLocalClothes?[...modernSet,...localSet]:modernSet);
+ const migrated=(Array.isArray(s.ownedClothes)?s.ownedClothes:base.ownedClothes).map(id=>aliases[id]||id).filter(id=>CLOTHES[id]&&allowed.has(id));
+ s.ownedClothes=[...new Set(migrated)];
+ for(const id of modernSet)if(CLOTHES[id]&&!s.ownedClothes.includes(id))s.ownedClothes.push(id);
+ if(reachedLocalClothes)for(const id of localSet)if(CLOTHES[id]&&!s.ownedClothes.includes(id))s.ownedClothes.push(id);
+ const defaults=reachedLocalClothes?{body:'local_shirt',outer:'local_vest',legs:'local_pants',feet:'boots'}:base.equipment;
+ for(const slot of ['body','outer','legs','feet']){
+   const mapped=aliases[s.equipment?.[slot]]||s.equipment?.[slot];
+   s.equipment[slot]=(mapped&&allowed.has(mapped)&&CLOTHES[mapped])?mapped:defaults[slot];
+ }
  s.companions={...base.companions,...(s.companions||{})};s.relationships={...base.relationships,...(s.relationships||{})};s.memories={...base.memories,...(s.memories||{})};s.hazards={...base.hazards,...(s.hazards||{}),dynamic:{...(s.hazards?.dynamic||{})}};s.world={...base.world,...(s.world||{}),weather:{...base.world.weather,...(s.world?.weather||{})}};
  clearInvalidQuickSlots(s);return s
 }
