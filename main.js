@@ -382,9 +382,45 @@ function renderStates(){
   }).join('')}</div>`;
 }
 
+function companionDots(value){
+  const n=Math.max(0,Math.min(5,Math.round(Number(value||0)/2)));
+  return `<span class="comp-dots" aria-label="${n} з 5">${'●'.repeat(n)}${'○'.repeat(5-n)}</span>`;
+}
+
 function renderCompanions(){
-  const all=Object.values(G.companions).filter(c=>c.known);
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Компаньйони</h2></div>${all.length?all.map(c=>`<article class="companion-card"><img src="${c.portrait}" alt=""><div><b>${esc(c.name)}</b><span>${esc(c.active?'З вами':c.state||'Не з вами')}</span>${c.facts?.map(x=>`<small>${esc(x)}</small>`).join('')||''}</div></article>`).join(''):'<div class="empty-state">Поки ви самі. Насолоджуйтесь моментом.</div>'}`;
+  const all=Object.entries(G.companions||{}).filter(([,c])=>c.known);
+  if(!all.length){
+    $('#menuContent').innerHTML=`<div class="section-title"><h2>Компаньйони</h2></div><div class="empty-state">Поки ви самі. Насолоджуйтесь моментом.</div>`;
+    return;
+  }
+
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Компаньйони</h2></div>${all.map(([id,c])=>{
+    if(id==='evpapiy'){
+      const r=G.relationships?.evpapiy?.values||{};
+      const stats=[
+        ['ПІЗДАБОЛЬСТВО',r.bullshit,'як часто він бреше та підйобує.'],
+        ['ДОВІРА',r.trust,'чим вище, тим більше шансів, шо ця жирна падла реально скаже щось корисне.'],
+        ['ОБРАЗА',r.offense,'Євпапій памʼятає більше, ніж хотілося б.'],
+        ['ЖАДІБНІСТЬ',r.greed,'наскільки легко його задобрити їжею.']
+      ];
+      return `<article class="companion-profile">
+        <div class="companion-main">
+          <img src="${esc(c.portrait||'./pigeon_base.png')}" alt="Євпапій">
+          <div class="companion-main-copy">
+            <div class="companion-name">${esc(c.name||'Євпапій')}</div>
+            <div class="companion-state">${esc(c.active?'З вами':c.state||'Не з вами')}</div>
+            <p>До вас прибився жирний наглий голуб, який дуже бісить.</p>
+          </div>
+        </div>
+        <div class="companion-characteristics">
+          <h3>Характеристики Євпапія</h3>
+          ${stats.map(([label,value,desc])=>`<div class="comp-stat"><div class="comp-stat-head"><b>${label}</b>${companionDots(value)}</div><span>${esc(desc)}</span></div>`).join('')}
+        </div>
+        <div class="companion-warning">З ним може бути легше. Може, веселіше. А може, на вас просто чекає жирна підстава.</div>
+      </article>`;
+    }
+    return `<article class="companion-card"><img src="${esc(c.portrait||'')}" alt=""><div><b>${esc(c.name)}</b><span>${esc(c.active?'З вами':c.state||'Не з вами')}</span>${c.facts?.map(x=>`<small>${esc(x)}</small>`).join('')||''}</div></article>`;
+  }).join('')}`;
 }
 
 function renderRelations(){
@@ -393,12 +429,36 @@ function renderRelations(){
 }
 
 function renderMap(){
-  const known=G.flags.mapUnlocked;
-  const places=[];
-  if(known)places.push('<article><b>Хата з криницею</b><span>Тут усе й почалось.</span></article>');
-  if(G.flags.chapter2Started)places.push('<article><b>Двір з поминками</b><span>Тут зараз зібралось пів села.</span></article>');
-  if(G.flags.heardShedBang)places.push('<article><b>Сарай</b><span>Звідти стукало. І це вже не дуже смішно.</span></article>');
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Карта</h2></div><div class="map-visual ${known?'':'locked'}"><img src="./map_village.jpg" alt="Карта села">${known?'':`<div class="map-lock-copy"><b>ПОКИ ЗАКРИТО</b><span>Спочатку треба хоча б трохи розібратись, де ви взагалі опинились.</span></div>`}</div>${known?`<div class="map-grid">${places.join('')}</div>`:''}`;
+  const unlocked=Boolean(G.flags.mapUnlocked);
+  const scene=String(G.scene||G.story?.sceneId||'');
+  const loc=String(G.world?.location||'');
+
+  const knownHome=unlocked;
+  const knownWake=Boolean(G.flags.chapter2Started)||scene.startsWith('ch2_');
+  const knownShed=Boolean(G.flags.heardShedConversation||G.flags.heardShedBang||G.flags.pigeonSawInsideShed||G.flags.ignoredShed)||['ch2_pee','ch2_bang','ch2_bang3','ch2_after_bang','ch2_side','ch2_garlic','ch2_salo','ch2_pigeon_scared','ch2_leave','ch2_figure','ch2_end'].includes(scene);
+
+  const currentHome=/хат|криниц/i.test(loc)&&!knownWake;
+  const currentWake=/помин|стол/i.test(loc);
+  const currentShed=/сарай/i.test(loc);
+
+  const marker=(cls,label,x,y,current=false)=>`<div class="map-marker ${cls}${current?' current':''}" style="left:${x}%;top:${y}%">${label}</div>`;
+  const unknown=(x,y)=>`<div class="map-unknown" style="left:${x}%;top:${y}%"><span>?</span></div>`;
+
+  const overlays = unlocked ? [
+    knownHome ? marker('known','Хатина з криницею',27,70,currentHome) : unknown(27,70),
+    knownWake ? marker('known','Двір з поминками',64,39,currentWake) : unknown(64,39),
+    knownShed ? marker('known small','Сарай',83,47,currentShed) : unknown(83,47),
+    unknown(21,18),
+    unknown(45,13),
+    unknown(84,20)
+  ].join('') : '';
+
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Карта</h2></div>
+    <div class="map-visual ${unlocked?'':'locked'}">
+      <img src="./map_village.jpg?v=084" alt="Карта села">
+      ${unlocked?`<div class="map-overlays">${overlays}</div>`:`<div class="map-lock-copy"><b>ПОКИ ЗАКРИТО</b><span>Спочатку треба хоча б трохи розібратись, де ви взагалі опинились.</span></div>`}
+    </div>
+    ${unlocked?`<div class="map-help">Назви зʼявляються прямо на карті тільки після того, як ви реально побували в локації. Знаки питання – місця, про які ви поки знаєте приблизно нихуя.</div>`:''}`;
 }
 
 function renderShop(){
