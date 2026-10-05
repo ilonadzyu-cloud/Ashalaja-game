@@ -1,14 +1,16 @@
-import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=083';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=083';
-import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem} from './engine.js?v=083';
-import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,emergencySaveRun,storageCapabilities} from './storage.js?v=083';
+import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=093';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=093';
+import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem,spendHeroPoint,spendEvpPoint,addHeroXp,addEvpXp} from './engine.js?v=093';
+import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,saveChapterCheckpoint,loadChapterCheckpoint,listChapterCheckpoints,clearChapterCheckpointsAfter,emergencySaveRun,storageCapabilities} from './storage.js?v=093';
 import {audioManager} from './audio.js?v=071';
-import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=083';
-import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=083';
+import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=093';
+import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=093';
+import {getChapter3Scene,CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {openStoryBattle} from './battle.js?v=093';
 
 function getGameScene(state){
   const id=state?.story?.sceneId||state?.scene||'intro';
-  return CHAPTER2_SCENES[id]||CHAPTER1_SCENES[id]||getChapter1Scene(state);
+  return CHAPTER3_SCENES[id]||CHAPTER2_SCENES[id]||CHAPTER1_SCENES[id]||getChapter1Scene(state);
 }
 
 const $=s=>document.querySelector(s);
@@ -23,7 +25,36 @@ let noticeQueue=[];
 let noticeBusy=false;
 let persistChain=Promise.resolve();
 let sfxTimers=[];
+let deathTimer=null;
+let lastSleepMessage='';
 const categories=['all','Їжа та напої','Ліки','Зброя','Якась хуйня'];
+
+const TESTER_UNLOCK_KEY='des-ne-tam-tester-unlocked-v1';
+const TESTER_CODE_HASH='58346b69699f6dadc90ed95b5dd126bc42de7130d6b8213d83bc5b0cf59e885d';
+let testerTapCount=0;
+let testerTapTimer=null;
+function testerUnlocked(){try{return localStorage.getItem(TESTER_UNLOCK_KEY)==='1'}catch{return false}}
+function syncTesterAccess(){const b=$('#testModeBtn');if(!b)return;const on=testerUnlocked();b.classList.toggle('hidden',!on);b.setAttribute('aria-hidden',on?'false':'true')}
+async function sha256Text(value){const bytes=new TextEncoder().encode(String(value||''));const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function tryUnlockTester(){
+  const entered=window.prompt('КОД ТЕСТЕРА');
+  if(entered===null)return;
+  let ok=false;
+  try{ok=(await sha256Text(entered.trim()))===TESTER_CODE_HASH}catch{}
+  if(!ok){toast('НЕ ТОЙ КОД','Тестовий режим лишився закритим.');return}
+  try{localStorage.setItem(TESTER_UNLOCK_KEY,'1')}catch{}
+  syncTesterAccess();toast('ТЕСТ ВІДКРИТО','Кнопка зʼявилась у головному меню.');
+}
+function installTesterUnlock(){
+  const version=$('.start-card .version');if(!version)return;
+  version.style.cursor='default';
+  version.addEventListener('click',()=>{
+    clearTimeout(testerTapTimer);testerTapTimer=setTimeout(()=>{testerTapCount=0},2800);
+    testerTapCount+=1;
+    if(testerTapCount>=7){testerTapCount=0;clearTimeout(testerTapTimer);tryUnlockTester()}
+  });
+  syncTesterAccess();
+}
 
 const statFlavor={
   strength:{1:'Пока не Геракл.',2:'Ну, лавку вже не боїтесь.',3:'Вже можна шось важче за голуба.',4:'Може, двері самі відкриються.',5:'Село починає берегти меблі.'},
@@ -70,7 +101,9 @@ function notifyEvents(events){
   for(const e of events||[]){
     if(e.type==='statusAdded')queueState(e.id);
     if(e.type==='statusRemoved')toast('СТАН ЗНЯТО',STATUS_DEFS[e.id]?.name||e.id);
-    if(e.type==='statLevelUp')toast(`${STAT_LABELS[e.key]||e.key} – НОВИЙ РІВЕНЬ`,`Рівень ${e.level}`);
+    if(e.type==='heroXp'&&e.visible!==false)toast('ДОСВІД',`+${e.actual} XP`);
+    if(e.type==='heroLevelUp')toast('НОВИЙ РІВЕНЬ ГЕРОЯ',`Рівень ${e.level} · +1 очко прокачки`);
+    if(e.type==='evpLevelUp')toast('ЄВПАПІЙ ПІДНЯВ РІВЕНЬ',`Рівень ${e.level} · +1 очко прокачки`);
   }
 }
 
@@ -105,9 +138,54 @@ function askConfirm({title='Почати заново?',text='',okText='Так, 
   });
 }
 
+const CHAPTER_META={
+  1:{title:'Глава 1',scene:'intro'},
+  2:{title:'Глава 2',scene:'ch2_intro'},
+  3:{title:'Глава 3',scene:'ch3_intro'}
+};
+
+function createChapterState(run,chapter){
+  const s=createInitialState(run);
+  s.flags.initialStatusPopupShown=true;
+  if(chapter===1)return normalizeState(s);
+
+  s.chapter=chapter;
+  s.story={chapter,sceneId:CHAPTER_META[chapter].scene,entered:[],finished:false};
+  s.scene=CHAPTER_META[chapter].scene;
+  s.flags.metPigeon=true;
+  s.flags.knowsPigeonName=true;
+  s.relationships.evpapiy.known=true;
+
+  if(chapter>=2){
+    s.flags.mapUnlocked=true;
+    s.flags.shopUnlocked=true;
+    s.flags.chapter1Complete=true;
+    s.companions.evpapiy.known=true;
+    s.companions.evpapiy.active=true;
+    s.companions.evpapiy.state='З вами';
+  }
+
+  if(chapter>=3){
+    s.flags.chapter2Started=true;
+    s.flags.chapter2Complete=true;
+    s.activeStatuses=['scared'];
+    s.discoveredStatuses=['hangover','scared'];
+    s.statusTimers={scared:s.clock.totalMinutes+20};
+    s.flags.scaredMigration091=true;
+    const salo=s.inventory.find(x=>x.id==='salo');
+    if(salo)salo.qty=Math.min(5,Number(salo.qty||0)+1);
+    else s.inventory.push({id:'salo',qty:1});
+    if(!s.inventory.some(x=>x.id==='water'))s.inventory.push({id:'water',qty:1});
+  }
+  return normalizeState(s);
+}
+
 async function renderStart(mode='home'){
+  if(mode==='test'&&!testerUnlocked())mode='home';
   show('startScreen');
+  syncTesterAccess();
   document.body.classList.remove('menu-open');
+  closeDeathOverlay();
   G=null;
   audioManager.setAtmosphere('silent');
   const runs=await listRuns();
@@ -117,55 +195,94 @@ async function renderStart(mode='home'){
   root.classList.toggle('hidden',mode==='home');
   actions.classList.toggle('hidden',mode!=='home');
 
-  if(mode!=='home'){
-    const head=document.createElement('div');
-    head.className='run-picker-head';
-    head.innerHTML=`<b>${mode==='new'?'Нове проходження':'Продовжити'}</b><button class="ghost tiny" data-back-start>Назад</button>`;
-    root.appendChild(head);
-    for(const r of runs){
-      const s=r.state?normalizeState(r.state):null,tm=s?formatTime(s.clock.totalMinutes):null;
-      const b=document.createElement('button');
-      b.className='run-card';
-      b.innerHTML=`<b>Проходження ${r.run}</b><span>${s?`Глава ${s.chapter} · ${tm.time}`:'Порожньо'}</span>`;
-      b.onclick=()=>mode==='new'?startNew(r.run):continueRun(r.run,s);
-      root.appendChild(b);
+  const addHead=(title,back='home')=>{
+    const head=document.createElement('div');head.className='run-picker-head';head.innerHTML=`<b>${esc(title)}</b><button class="ghost tiny" data-back-start>Назад</button>`;root.appendChild(head);head.querySelector('[data-back-start]').onclick=()=>renderStart(back);return head;
+  };
+  const runCard=(run,state,onClick,label='')=>{const tm=state?formatTime(state.clock.totalMinutes):null;const b=document.createElement('button');b.className='run-card';b.innerHTML=`<b>Проходження ${run}</b><span>${state?`Глава ${state.chapter} · ${tm.time}`:'Порожньо'}${label?` · ${esc(label)}`:''}</span>`;b.onclick=onClick;root.appendChild(b)};
+
+  if(mode==='new'){
+    addHead('Нове проходження');
+    for(const r of runs){const st=r.state?normalizeState(r.state):null;runCard(r.run,st,()=>startNew(r.run))}
+  }else if(mode==='continue'){
+    addHead('Продовжити');
+    let shown=0;for(const r of runs){if(!r.state)continue;shown++;const st=normalizeState(r.state);runCard(r.run,st,()=>continueRun(r.run,st))}
+    if(!shown)root.insertAdjacentHTML('beforeend','<div class="empty-state">Ще нема жодного сейву.</div>');
+  }else if(mode==='chapters'){
+    addHead('Глави');
+    const grid=document.createElement('div');grid.className='chapter-grid';
+    for(const chapter of [1,2,3]){
+      let checkpointCount=0,continueCount=0;
+      for(const r of runs){if(chapter===1||await loadChapterCheckpoint(r.run,chapter))checkpointCount++;if(r.state&&normalizeState(r.state).chapter===chapter)continueCount++}
+      const card=document.createElement('article');card.className='chapter-card';
+      card.innerHTML=`<div><b>${CHAPTER_META[chapter].title}</b><span>${chapter===1?'Початок гри':chapter===3?'Продовження глави ще буде.':'Збережений початок глави'}</span></div><div class="chapter-card-actions"><button type="button" data-chapter-new="${chapter}" ${checkpointCount?'':'disabled'}>${chapter===1?'Нова гра':'Почати главу заново'}</button><button type="button" data-chapter-continue="${chapter}" ${continueCount?'':'disabled'}>Продовжити</button></div>`;
+      grid.appendChild(card);
     }
-    root.querySelector('[data-back-start]').onclick=()=>renderStart('home');
+    root.appendChild(grid);
+    root.querySelectorAll('[data-chapter-new]').forEach(b=>b.onclick=()=>renderStart(`chapter-new-${b.dataset.chapterNew}`));
+    root.querySelectorAll('[data-chapter-continue]').forEach(b=>b.onclick=()=>renderStart(`chapter-continue-${b.dataset.chapterContinue}`));
+  }else if(mode.startsWith('chapter-new-')||mode.startsWith('chapter-continue-')){
+    const isNew=mode.startsWith('chapter-new-'),chapter=Number(mode.split('-').pop());addHead(`${CHAPTER_META[chapter].title} · ${isNew?(chapter===1?'Нова гра':'Почати заново'):'Продовжити'}`,'chapters');let shown=0;
+    for(const r of runs){const st=r.state?normalizeState(r.state):null;if(isNew&&chapter>1&&!(await loadChapterCheckpoint(r.run,chapter)))continue;if(!isNew&&(!st||st.chapter!==chapter))continue;shown++;runCard(r.run,st,()=>isNew?startFromChapter(r.run,chapter):continueRun(r.run,st),isNew&&chapter>1?'чекпойнт глави':'')}
+    if(!shown)root.insertAdjacentHTML('beforeend','<div class="empty-state">Тут поки нема відповідного сейву.</div>');
+  }else if(mode==='saves'){
+    addHead('Збереження');
+    for(const r of runs){const section=document.createElement('div');section.className='start-save-group';const manual=await listManual(r.run);section.innerHTML=`<div class="start-save-title"><b>Проходження ${r.run}</b><span>${r.state?`автосейв · глава ${normalizeState(r.state).chapter}`:'автосейву нема'}</span></div><div class="start-save-slots">${manual.map(x=>`<button type="button" data-start-manual="${r.run}:${x.slot}" ${x.state?'':'disabled'}><b>Слот ${x.slot}</b><span>${x.state?`Глава ${normalizeState(x.state).chapter}`:'Порожньо'}</span></button>`).join('')}</div>`;root.appendChild(section)}
+    root.querySelectorAll('[data-start-manual]').forEach(b=>b.onclick=async()=>{const [run,slot]=b.dataset.startManual.split(':').map(Number),st=await loadManual(run,slot);if(await loadManualState(run,st)){show('gameScreen');await renderGame()}});
+  }else if(mode==='test'){
+    addHead('Тестовий сейв');
+    const saved=await loadRun(99);
+    root.insertAdjacentHTML('beforeend',`<div class="test-mode-panel"><div class="info-card">Окремий тестовий сейв. Нормальні проходження 1–3 він не чіпає.</div>${saved?'<button type="button" class="big" id="continueTestBtn">Продовжити тест</button>':''}<div class="test-chapters"><button data-test-chapter="1">Глава 1</button><button data-test-chapter="2">Глава 2</button><button data-test-chapter="3">Глава 3</button></div><div class="test-options"><label><input type="checkbox" id="testAllItems" checked> Дати тестові предмети</label><label><input type="checkbox" id="testPrayer" checked> Відкрити молитву</label><label><input type="checkbox" id="testSunset" checked> Відкрити ЗАКАТ ПРЄЗРЄНІЯ</label><label><input type="checkbox" id="testScared"> Дати ОБСЕРУНЬКАВСЯ ВІД СТРАХУ</label></div></div>`);
+    $('#continueTestBtn')?.addEventListener('click',()=>continueRun(99,normalizeState(saved)));
+    root.querySelectorAll('[data-test-chapter]').forEach(b=>b.onclick=()=>startTestChapter(Number(b.dataset.testChapter),{allItems:$('#testAllItems').checked,prayer:$('#testPrayer').checked,sunset:$('#testSunset').checked,scared:$('#testScared').checked}));
   }
 
-  const cap=await storageCapabilities();
-  const storage=$('#storageStatus');
-  if(cap.readBack){storage.textContent='';storage.classList.add('hidden')}
-  else{storage.textContent='Є проблема зі збереженням у цьому браузері.';storage.classList.remove('hidden')}
+  const cap=await storageCapabilities();const storage=$('#storageStatus');if(cap.readBack){storage.textContent='';storage.classList.add('hidden')}else{storage.textContent='Є проблема зі збереженням у цьому браузері.';storage.classList.remove('hidden')}
+}
+
+async function startFromChapter(run,chapter){
+  if(chapter===1)return startNew(run);
+  const checkpoint=await loadChapterCheckpoint(run,chapter);
+  if(!checkpoint){toast('НЕМА ЧЕКПОЙНТА',`Спочатку треба реально дійти до ${CHAPTER_META[chapter].title.toLocaleLowerCase('uk-UA')}.`);return}
+  const old=await loadRun(run);
+  if(old){const ok=await askConfirm({title:`Почати ${CHAPTER_META[chapter].title.toLocaleLowerCase('uk-UA')} заново?`,text:'Повернемось до стану, з яким ви вперше зайшли в цю главу. Усі наслідки попередніх глав лишаться.',okText:'Так, почати главу'});if(!ok)return}
+  G=normalizeState({...checkpoint,runId:run});await clearChapterCheckpointsAfter(run,chapter);await saveRun(G);show('gameScreen');await renderGame();
 }
 
 async function startNew(run){
   const old=await loadRun(run);
-  if(old){
-    const ok=await askConfirm({title:`Стерти проходження ${run}?`,text:'Цей сейв буде видалено, і гра почнеться з самого початку.',okText:'Так, почати заново'});
-    if(!ok)return;
-  }
-  await clearRun(run);
-  G=createInitialState(run);
-  await saveRun(G);
-  show('howToScreen');
+  if(old){const ok=await askConfirm({title:`Стерти проходження ${run}?`,text:'Цей сейв буде видалено, і гра почнеться з самого початку.',okText:'Так, почати заново'});if(!ok)return}
+  await clearRun(run);G=createInitialState(run);await saveRun(G);await saveChapterCheckpoint(G,1);show('howToScreen');
+}
+
+async function startTestChapter(chapter,opts={}){
+  if(!testerUnlocked()){await renderStart('home');return}
+  await clearRun(99);G=createChapterState(99,chapter);G.flags.testMode=true;G.flags.initialStatusPopupShown=true;
+  if(opts.allItems){for(const [id,qty] of [['water',2],['salo',2],['vodka',2],['knife',1],['garlic',3],['onion',2],['onion_angry',1],['onion_smelly',1],['medkit',2]]){const cur=G.inventory.find(x=>x.id===id);if(cur)cur.qty=Math.max(cur.qty,qty);else G.inventory.push({id,qty})}}
+  if(opts.prayer){G.flags.prayerUnlocked=true;G.unlocks.prayer=true}
+  if(opts.sunset){G.unlocks.sunsetContempt=true;G.flags.evpapiySaloGivenCount=2;G.flags.evpapiyEnemyConflictCount=1}
+  if(opts.scared){if(!G.activeStatuses.includes('scared'))G.activeStatuses.push('scared');if(!G.discoveredStatuses.includes('scared'))G.discoveredStatuses.push('scared');G.statusTimers.scared=G.clock.totalMinutes+20}else{G.activeStatuses=G.activeStatuses.filter(x=>x!=='scared');delete G.statusTimers.scared;G.flags.scaredMigration091=true}
+  G.heroProgression.points=Math.max(5,Number(G.heroProgression.points||0));if(G.companions?.evpapiy?.progression)G.companions.evpapiy.progression.points=Math.max(5,Number(G.companions.evpapiy.progression.points||0));
+  G=normalizeState(G);await saveRun(G);await saveChapterCheckpoint(G,chapter);show('gameScreen');await renderGame();
 }
 
 async function continueRun(run,state){
   if(!state){toast('НЕМА СЕЙВУ','Тут ще нема проходження.');return}
-  G=normalizeState(state);
-  show('gameScreen');
-  await renderGame();
+  G=normalizeState({...state,runId:run});show('gameScreen');await renderGame();
+}
+
+async function loadManualState(run,raw){
+  if(!raw)return false;
+  const savedCheckpoint=raw.__chapterCheckpoint?JSON.parse(JSON.stringify(raw.__chapterCheckpoint)):null;
+  const clean=JSON.parse(JSON.stringify(raw));delete clean.__chapterCheckpoint;
+  G=normalizeState({...clean,runId:run});
+  await clearChapterCheckpointsAfter(run,G.chapter);
+  if(savedCheckpoint){savedCheckpoint.runId=run;await saveChapterCheckpoint(savedCheckpoint,G.chapter)}
+  else await saveChapterCheckpoint(G,G.chapter);
+  await saveRun(G);return true;
 }
 
 async function beginGame(){
-  show('gameScreen');
-  await renderGame();
-  if(!G.flags.initialStatusPopupShown){
-    G.flags.initialStatusPopupShown=true;
-    await persist();
-    queueState('hangover');
-  }
+  show('gameScreen');await renderGame();if(!G.flags.initialStatusPopupShown){G.flags.initialStatusPopupShown=true;await persist();queueState('hangover')}
 }
 
 function clearSfx(){for(const t of sfxTimers)clearTimeout(t);sfxTimers=[]}
@@ -174,6 +291,8 @@ async function ensureSceneEntered(scene){
   const chapter=Number(scene.chapter||G.chapter||1);
   G.chapter=chapter;G.story.chapter=chapter;
   if(G.story.entered.includes(id))return false;
+  const checkpoint=await loadChapterCheckpoint(G.runId,chapter);
+  if(!checkpoint)await saveChapterCheckpoint(G,chapter);
   G.story.entered.push(id);
   const world=resolveSceneValue(scene.world||[],G)||[];
   const onEnter=resolveSceneValue(scene.onEnter||[],G)||[];
@@ -197,6 +316,21 @@ async function renderGame(){
   syncSceneAudio(scene);
   renderHeader();renderStage(scene);renderStory(scene);renderQuickSlots();renderActiveStates();
   if(!$('#menuOverlay').classList.contains('hidden'))renderMenu();
+  if(G.health<=0){clearTimeout(deathTimer);deathTimer=setTimeout(()=>openDeathOverlay(),1600)}else closeDeathOverlay();
+}
+
+function closeDeathOverlay(){
+  clearTimeout(deathTimer);deathTimer=null;const o=$('#deathOverlay');if(!o)return;o.classList.add('hidden');o.setAttribute('aria-hidden','true');$('#deathManualSaves')?.classList.add('hidden');
+}
+
+async function openDeathOverlay(){
+  if(!G||G.health>0)return;const o=$('#deathOverlay');if(!o)return;const chapter=Number(G.chapter||1),checkpoint=await loadChapterCheckpoint(G.runId,chapter),manual=await listManual(G.runId);o.classList.remove('hidden');o.setAttribute('aria-hidden','false');
+  const restart=$('#deathChapterBtn');restart.disabled=!checkpoint;restart.textContent=checkpoint?`Почати главу ${chapter} заново`:'Нема чекпойнта цієї глави';
+  const box=$('#deathManualSaves');box.innerHTML=manual.map(x=>`<button type="button" data-death-load="${x.slot}" ${x.state?'':'disabled'}><b>Слот ${x.slot}</b><span>${x.state?`Глава ${normalizeState(x.state).chapter}`:'Порожньо'}</span></button>`).join('');
+  box.querySelectorAll('[data-death-load]').forEach(b=>b.onclick=async()=>{const run=G.runId,st=await loadManual(run,Number(b.dataset.deathLoad));if(!await loadManualState(run,st))return;closeDeathOverlay();show('gameScreen');await renderGame();toast('ЗАВАНТАЖЕНО',`Слот ${b.dataset.deathLoad}`)});
+  $('#deathManualBtn').onclick=()=>box.classList.toggle('hidden');
+  restart.onclick=async()=>{if(!checkpoint)return;G=normalizeState({...checkpoint,runId:G.runId});await clearChapterCheckpointsAfter(G.runId,chapter);await saveRun(G);closeDeathOverlay();show('gameScreen');await renderGame()};
+  $('#deathMenuBtn').onclick=async()=>{closeDeathOverlay();await renderStart('home')};
 }
 
 function renderHeader(){
@@ -222,6 +356,17 @@ async function choose(choice){
   await audioManager.unlock();
   const r=executeAction(G,{id:choice.id,minutes:choice.minutes||0,activity:choice.activity||'light',effects:choice.effects||[],hiddenEffects:choice.hiddenEffects||[]});
   G=r.state;notifyEvents(r.events);
+
+  if(choice.battle){
+    await persist();
+    const result=await openStoryBattle(G,choice.battle);
+    if(result?.state)G=normalizeState(result.state);if(result?.events)notifyEvents(result.events);
+    const next=result?.outcome==='knockout'?choice.battle.nextOnKnockout:result?.outcome==='lose'?choice.battle.nextOnLose:choice.battle.nextOnWin;
+    if(next){G.story.sceneId=next;G.scene=next}
+    await persist();await renderGame();window.scrollTo({top:0,behavior:'instant'});
+    return;
+  }
+
   if(choice.next){G.story.sceneId=choice.next;G.scene=choice.next}
   await persist();await renderGame();window.scrollTo({top:0,behavior:'instant'});
 }
@@ -281,7 +426,7 @@ function closeMenu(){
 function renderMenu(){
   document.querySelectorAll('#menuTabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
   const tm=formatTime(G.clock.totalMinutes);$('#menuMeta').textContent=`Проходження ${G.runId} · День ${tm.day}, ${tm.time}`;
-  ({states:renderStates,stats:renderStats,needs:renderNeeds,inventory:renderInventory,clothes:renderClothes,companions:renderCompanions,relations:renderRelations,map:renderMap,shop:renderShop,settings:renderSettings}[currentTab]||renderInventory)();
+  ({states:renderStates,stats:renderStats,needs:renderNeeds,sleep:renderSleep,inventory:renderInventory,clothes:renderClothes,companions:renderCompanions,relations:renderRelations,map:renderMap,shop:renderShop,settings:renderSettings}[currentTab]||renderInventory)();
 }
 
 function renderInventory(){
@@ -322,15 +467,13 @@ function renderClothes(){
 }
 
 function renderStats(){
-  const mods=statModifiers(G),root=$('#menuContent');
-  root.innerHTML=`<div class="section-title"><h2>Характеристики</h2></div><div class="info-card">10 очок прогресу = новий рівень. Прогрес постійний, а стани й одяг дають тимчасовий плюс або мінус. Зелені поділки – плюс, червоні – мінус.</div><div class="stat-list">${STAT_KEYS.map(k=>{
-    const st=G.stats[k]||{level:1,progress:0},progress=Math.max(0,Math.min(9,Number(st.progress||0))),level=Math.max(1,Number(st.level||1)),mod=Number(mods[k]||0),now=effectiveStat(G,k);
-    const lost=Math.min(progress,Math.max(0,-mod)),kept=progress-lost,bonus=Math.max(0,Math.min(10-progress,mod));
-    const pips=Array.from({length:10},(_,i)=>`<span class="pip ${i<kept?'base':i<progress?'debuff':i<progress+bonus?'buff':''}"></span>`).join('');
-    const id=`stat-desc-${k}`;
-    return `<article class="stat-card"><div class="stat-head"><div><b>${STAT_LABELS[k]}</b> <button class="info-btn" type="button" data-info="${id}">ⓘ</button><div class="stat-level">Рівень ${level} · прогрес ${progress}/10${mod?` · <span class="${mod>0?'buff-text':'debuff-text'}">тимчасово ${mod>0?'+':''}${mod}</span> · зараз ${now}`:''}</div></div></div><div class="stat-meter">${pips}</div><div class="stat-desc" id="${id}">${esc(STAT_DESCRIPTIONS[k])}</div><div class="stat-flavor">${esc(statFlavorText(k,level))}</div></article>`;
-  }).join('')}</div>`;
+  const mods=statModifiers(G),root=$('#menuContent'),p=G.heroProgression||{level:1,xp:0,points:0};
+  const xp=Math.max(0,Math.min(99,Number(p.xp||0)));
+  root.innerHTML=`<div class="section-title"><h2>Характеристики</h2><span>ГЕРОЙ · РІВЕНЬ ${p.level}</span></div>
+    <div class="progression-card"><div class="progression-head"><div><b>Досвід</b><span>${xp}/100 XP</span></div><div><b>Очки прокачки</b><strong>${p.points}</strong></div></div><div class="progression-bar"><i style="width:${xp}%"></i></div><small>100 XP = новий рівень + 1 очко. Очки ви самі вкладаєте в характеристики.</small></div>
+    <div class="stat-list">${STAT_KEYS.map(k=>{const st=G.stats[k]||{level:1},level=Math.max(1,Number(st.level||1)),mod=Number(mods[k]||0),now=effectiveStat(G,k),id=`stat-desc-${k}`;return `<article class="stat-card stat-upgrade-card"><div class="stat-head"><div><b>${STAT_LABELS[k]}</b> <button class="info-btn" type="button" data-info="${id}">ⓘ</button><div class="stat-level">Рівень ${level}${mod?` · <span class="${mod>0?'buff-text':'debuff-text'}">стани ${mod>0?'+':''}${mod}</span> · зараз ${now}`:''}</div></div><button type="button" class="stat-plus" data-stat-upgrade="${k}" ${p.points<=0||level>=10?'disabled':''}>+1</button></div><div class="stat-desc" id="${id}">${esc(STAT_DESCRIPTIONS[k])}</div><div class="stat-flavor">${esc(statFlavorText(k,level))}</div></article>`}).join('')}</div>`;
   root.querySelectorAll('.info-btn').forEach(btn=>btn.onclick=()=>{const el=$('#'+btn.dataset.info);if(el)el.classList.toggle('open')});
+  root.querySelectorAll('[data-stat-upgrade]').forEach(btn=>btn.onclick=async()=>{if(!spendHeroPoint(G,btn.dataset.statUpgrade))return;await persist();renderStats();renderHeader();toast('ПРОКАЧАНО',`${STAT_LABELS[btn.dataset.statUpgrade]} +1`)})
 }
 
 function needTone(v){v=Number(v)||0;if(v>40)return'needgood';if(v>20)return'needmid';if(v>5)return'needlow';return'needcrit'}
@@ -373,6 +516,63 @@ function renderNeeds(){
   $('#menuContent').innerHTML=`<div class="section-title"><h2>Потреби</h2></div><div class="info-card">Чим більше відсотків, тим краще. Плюс – добре. Мінус – хуйово. На 40% і нижче вже починаються стани, на 20% – сильні дебафи, 5% і нижче – критично. Їжа відновлює ситість, напої – воду, перепочинок – бадьорість, аптечка – здоровʼя. Брудний одяг можна випрати або змінити. При 0% здоровʼя гра завершується.</div><div class="needs-list">${rows.map(([label,value,kind])=>`<article class="need-card"><div class="need-row"><b>${label}</b><b>${Math.round(value)}%</b></div><div class="need-bar ${needTone(value)}"><span style="width:${Math.max(0,Math.min(100,value))}%"></span></div><div class="stat-flavor">${esc(needFlavor(kind,value))}</div></article>`).join('')}</div>`;
 }
 
+function sleepPlace(){
+  const env=String(G.world?.environment||'outdoors');
+  const loc=String(G.world?.location||'').toLocaleLowerCase('uk-UA');
+  if(env==='barn'||/хлів/.test(loc))return{key:'barn',label:'Хлів',activity:'sleep_barn'};
+  if(env==='indoors')return{key:'house',label:'Хатина',activity:'sleep_house'};
+  return{key:'outdoors',label:'Вулиця',activity:'sleep_outdoors'};
+}
+
+function sleepMessage(place,hours,cow){
+  if(cow)return'Вас облизала корова';
+  if(place==='house'){
+    if(hours===8)return'Вісім годин без хуйні. Новий рекорд.';
+    return'Вперше за сьогодні ви лежите і ніхто не говорить з вами. Навіть Євпапій. Підозріло.';
+  }
+  if(place==='barn')return'Пахне сіном і гімно';
+  return'Спалось хуйово. Все';
+}
+
+async function doSleep(hours){
+  const place=sleepPlace();
+  const cow=place.key==='barn'&&Math.random()<.05;
+  const effects=cow?[{type:'statusAdd',id:'cowLicked'}]:[];
+  const r=executeAction(G,{
+    id:`sleep_${place.key}_${hours}h`,
+    minutes:hours*60,
+    activity:place.activity,
+    effects
+  });
+  G=r.state;
+  notifyEvents(r.events);
+  lastSleepMessage=sleepMessage(place.key,hours,cow);
+  await persist();
+  await renderGame();
+  toast('ВИ ПОСПАЛИ',lastSleepMessage);
+}
+
+function renderSleep(){
+  const place=sleepPlace();
+  const options=[1,4,8];
+  const root=$('#menuContent');
+  const cards=options.map(hours=>{
+    const action={id:'sleep_preview',minutes:hours*60,activity:place.activity,effects:[]};
+    const preview=previewAction(G,action).filter(x=>/^(Бадьорість|Вода|Ситість|Здоровʼя)/.test(x));
+    const effects=preview.map(x=>`<span class="sleep-effect ${x.includes('+')?'plus':'minus'}">${esc(x)}</span>`).join('');
+    return `<button class="sleep-card" type="button" data-sleep-hours="${hours}">
+      <b>${hours===1?'Подрімати 1 годину':hours===4?'Поспати 4 години':'Виспатися 8 годин'}</b>
+      <small>${effects||'Час пройде.'}</small>
+    </button>`;
+  }).join('');
+  root.innerHTML=`<div class="section-title"><h2>Сон</h2><span>${esc(place.label)}</span></div>
+    <div class="info-card">Спати можна коли хочете. Наскільки це хороша ідея, залежить від місця й погоди.</div>
+    ${lastSleepMessage?`<div class="sleep-result">${esc(lastSleepMessage)}</div>`:''}
+    <div class="sleep-grid">${cards}</div>
+    ${place.key==='barn'?'<div class="sleep-note">У хліві іноді може статись дещо рідкісне.</div>':''}`;
+  root.querySelectorAll('[data-sleep-hours]').forEach(b=>b.onclick=()=>doSleep(Number(b.dataset.sleepHours)));
+}
+
 function renderStates(){
   const known=new Set(G.discoveredStatuses);
   $('#menuContent').innerHTML=`<div class="section-title"><h2>Стани</h2></div><div class="info-card">На головному екрані показані активні стани. Тут – усе, що герой уже відкрив.</div><div class="state-list">${Object.entries(STATUS_DEFS).map(([id,d])=>{
@@ -389,38 +589,20 @@ function companionDots(value){
 
 function renderCompanions(){
   const all=Object.entries(G.companions||{}).filter(([,c])=>c.known);
-  if(!all.length){
-    $('#menuContent').innerHTML=`<div class="section-title"><h2>Компаньйони</h2></div><div class="empty-state">Поки ви самі. Насолоджуйтесь моментом.</div>`;
-    return;
-  }
-
+  if(!all.length){$('#menuContent').innerHTML=`<div class="section-title"><h2>Компаньйони</h2></div><div class="empty-state">Поки ви самі. Насолоджуйтесь моментом.</div>`;return}
   $('#menuContent').innerHTML=`<div class="section-title"><h2>Компаньйони</h2></div>${all.map(([id,c])=>{
     if(id==='evpapiy'){
-      const r=G.relationships?.evpapiy?.values||{};
-      const stats=[
-        ['ПІЗДАБОЛЬСТВО',r.bullshit,'як часто він бреше та підйобує.'],
-        ['ДОВІРА',r.trust,'чим вище, тим більше шансів, шо ця жирна падла реально скаже щось корисне.'],
-        ['ОБРАЗА',r.offense,'Євпапій памʼятає більше, ніж хотілося б.'],
-        ['ЖАДІБНІСТЬ',r.greed,'наскільки легко його задобрити їжею.']
-      ];
-      return `<article class="companion-profile">
-        <div class="companion-main">
-          <img src="${esc(c.portrait||'./pigeon_base.png')}" alt="Євпапій">
-          <div class="companion-main-copy">
-            <div class="companion-name">${esc(c.name||'Євпапій')}</div>
-            <div class="companion-state">${esc(c.active?'З вами':c.state||'Не з вами')}</div>
-            <p>До вас прибився жирний наглий голуб, який дуже бісить.</p>
-          </div>
-        </div>
-        <div class="companion-characteristics">
-          <h3>Характеристики Євпапія</h3>
-          ${stats.map(([label,value,desc])=>`<div class="comp-stat"><div class="comp-stat-head"><b>${label}</b>${companionDots(value)}</div><span>${esc(desc)}</span></div>`).join('')}
-        </div>
-        <div class="companion-warning">З ним може бути легше. Може, веселіше. А може, на вас просто чекає жирна підстава.</div>
-      </article>`;
+      const r=G.relationships?.evpapiy?.values||{},p=c.progression||{level:c.level||1,xp:0,points:0,attack:1,aggression:1,health:1};const xp=Math.max(0,Math.min(99,Number(p.xp||0)));
+      const rel=[['ПІЗДАБОЛЬСТВО',r.bullshit,'як часто він бреше та підйобує.'],['ДОВІРА',r.trust,'чим вище, тим більше шансів, шо ця жирна падла реально скаже щось корисне.'],['ОБРАЗА',r.offense,'Євпапій памʼятає більше, ніж хотілося б.'],['ЖАДІБНІСТЬ',r.greed,'наскільки легко його задобрити їжею.']];
+      const combat=[['attack','АТАКА',p.attack,'сильніше бʼє, коли ви таки використовуєте голуба як зброю.'],['aggression','АГРЕСІЯ',p.aggression,'додає шкоди його бойовим діям.'],['health','ЗДОРОВʼЯ',p.health,`максимум зараз ${c.maxHp} HP.`]];
+      return `<article class="companion-profile"><div class="companion-main"><img src="${esc(c.portrait||'./pigeon_base.png')}" alt="Євпапій"><div class="companion-main-copy"><div class="companion-name">${esc(c.name||'Євпапій')} · РІВЕНЬ ${p.level}</div><div class="companion-state">${esc(c.active?'З вами':c.state||'Не з вами')}</div><p>До вас прибився жирний наглий голуб, який дуже бісить.</p></div></div>
+        <div class="progression-card compact"><div class="progression-head"><div><b>Досвід</b><span>${xp}/100 XP</span></div><div><b>Очки прокачки</b><strong>${p.points}</strong></div></div><div class="progression-bar"><i style="width:${xp}%"></i></div></div>
+        <div class="companion-characteristics"><h3>Бойова прокачка</h3>${combat.map(([key,label,value,desc])=>`<div class="comp-stat upgrade"><div class="comp-stat-head"><b>${label} · ${value}</b><button type="button" data-evp-upgrade="${key}" ${p.points<=0||value>=10?'disabled':''}>+1</button></div><span>${esc(desc)}</span></div>`).join('')}</div>
+        <div class="companion-characteristics"><h3>Характер і стосунки</h3>${rel.map(([label,value,desc])=>`<div class="comp-stat"><div class="comp-stat-head"><b>${label}</b>${companionDots(value)}</div><span>${esc(desc)}</span></div>`).join('')}</div><div class="companion-warning">З ним може бути легше. Може, веселіше. А може, на вас просто чекає жирна підстава.</div></article>`;
     }
-    return `<article class="companion-card"><img src="${esc(c.portrait||'')}" alt=""><div><b>${esc(c.name)}</b><span>${esc(c.active?'З вами':c.state||'Не з вами')}</span>${c.facts?.map(x=>`<small>${esc(x)}</small>`).join('')||''}</div></article>`;
+    return `<article class="companion-card"><img src="${esc(c.portrait||'')}" alt=""><div><b>${esc(c.name)}</b><span>${esc(c.active?'З вами':c.state||'Не з вами')}</span>${c.facts?.map(x=>`<small>${esc(x)}</small>`).join('')||''}</div></article>`
   }).join('')}`;
+  document.querySelectorAll('[data-evp-upgrade]').forEach(btn=>btn.onclick=async()=>{if(!spendEvpPoint(G,btn.dataset.evpUpgrade))return;await persist();renderCompanions();toast('ЄВПАПІЙ ПРОКАЧАНИЙ',`${btn.dataset.evpUpgrade==='attack'?'АТАКА':btn.dataset.evpUpgrade==='aggression'?'АГРЕСІЯ':'ЗДОРОВʼЯ'} +1`)})
 }
 
 function renderRelations(){
@@ -463,12 +645,13 @@ function renderMap(){
 
 function renderShop(){
   const items=[['water',4],['aspirin',8],['onion',2]];
+  const day=Math.floor(Number(G.clock?.totalMinutes||0)/1440)+1;
   const jobs=[
-    {id:'sweep',title:'Підмести двір',pay:2,minutes:15,done:G.flags.sweptYard,effects:[{type:'money',value:2}],hidden:[{type:'flag',key:'sweptYard',value:true}]},
-    {id:'wood',title:'Нарубати дрова',pay:4,minutes:25,done:G.flags.choppedWood,effects:[{type:'money',value:4},{type:'stat',key:'strength',value:1}],hidden:[{type:'flag',key:'choppedWood',value:true}]},
-    {id:'deal',title:'Підписатись на підозріле діло',pay:8,minutes:10,done:G.flags.suspiciousDeal,effects:[{type:'money',value:8}],hidden:[{type:'flag',key:'suspiciousDeal',value:true},{type:'flag',key:'suspiciousDealConsequence',value:true}]}
+    {id:'sweep',title:'Підмести двір',pay:2,minutes:15,repeat:'daily',done:Number(G.flags.sweptYardDay||0)===day,effects:[{type:'money',value:2}],hidden:[{type:'flag',key:'sweptYard',value:true},{type:'flag',key:'sweptYardDay',value:day}]},
+    {id:'wood',title:'Нарубати дрова',pay:4,minutes:25,repeat:'daily',done:Number(G.flags.choppedWoodDay||0)===day,effects:[{type:'money',value:4},{type:'stat',key:'strength',value:1}],hidden:[{type:'flag',key:'choppedWood',value:true},{type:'flag',key:'choppedWoodDay',value:day}]},
+    {id:'deal',title:'Підписатись на підозріле діло',pay:8,minutes:10,repeat:'once',done:Boolean(G.flags.suspiciousDeal),effects:[{type:'money',value:8}],hidden:[{type:'flag',key:'suspiciousDeal',value:true},{type:'flag',key:'suspiciousDealDay',value:day},{type:'flag',key:'suspiciousDealConsequence',value:true},{type:'flag',key:'suspiciousDealConsequencePending',value:true}]}
   ];
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2><span><b>${G.money}</b> монет</span></div>${G.flags.shopUnlocked?`<div class="shop-money">У вас зараз <b>${G.money} монет</b>.</div><div class="shop-grid">${items.map(([id,p])=>`<article class="item-card"><div class="item-icon">${ITEM_DEFS[id].icon}</div><div class="item-copy"><b>${esc(ITEM_DEFS[id].name)}</b><span>${p} мон.</span><button data-buy="${id}" data-price="${p}">Купити</button></div></article>`).join('')}</div><div class="section-title shop-work-title"><h2>Як заробити</h2></div><div class="shop-jobs">${jobs.map(j=>`<article class="job-card ${j.done?'done':''}"><div><b>${esc(j.title)}</b><span>${j.done?'Уже зробили.':`${j.minutes} хв · +${j.pay} монет`}</span></div><button data-job="${j.id}" ${j.done?'disabled':''}>${j.done?'Готово':'Взятись'}</button></article>`).join('')}</div>`:'<div class="locked-big">Ще закрито.</div>'}`;
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2><span><b>${G.money}</b> монет</span></div>${G.flags.shopUnlocked?`<div class="shop-money">У вас зараз <b>${G.money} монет</b>.</div><div class="shop-grid">${items.map(([id,p])=>`<article class="item-card"><div class="item-icon">${ITEM_DEFS[id].icon}</div><div class="item-copy"><b>${esc(ITEM_DEFS[id].name)}</b><span>${p} мон.</span><button data-buy="${id}" data-price="${p}">Купити</button></div></article>`).join('')}</div><div class="section-title shop-work-title"><h2>Як заробити</h2><span>День ${day}</span></div><div class="info-card">Звичайна робота поновлюється кожного нового ігрового дня.</div><div class="shop-jobs">${jobs.map(j=>`<article class="job-card ${j.done?'done':''}"><div><b>${esc(j.title)}</b><span>${j.done?(j.repeat==='daily'?'На сьогодні вже зробили.':'Уже зробили.'):`${j.minutes} хв · +${j.pay} монет`}</span></div><button data-job="${j.id}" ${j.done?'disabled':''}>${j.done?'Готово':'Взятись'}</button></article>`).join('')}</div>`:'<div class="locked-big">Ще закрито.</div>'}`;
   document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{const p=Number(b.dataset.price);if(G.money<p){toast('НЕМА ГРОШЕЙ','Ну от так.');return}if(!addItem(G,b.dataset.buy,1)){toast('НЕМА МІСЦЯ','Інвентар забитий.');return}G.money-=p;await persist();renderShop()});
   document.querySelectorAll('[data-job]').forEach(b=>b.onclick=async()=>{
     const j=jobs.find(x=>x.id===b.dataset.job);if(!j||j.done)return;
@@ -477,7 +660,6 @@ function renderShop(){
   });
 }
 
-
 async function renderSettings(){
   const root=$('#menuContent'),a=audioManager.getSettings(),manual=await listManual(G.runId);
   root.innerHTML=`<div class="section-title"><h2>Налаштування</h2></div><div class="settings-block"><label><input id="soundEnabled" type="checkbox" ${a.enabled?'checked':''}> Звук</label><label>Загальна гучність <input id="masterVol" type="range" min="0" max="1" step=".05" value="${a.master}"></label><label>Атмосфера <input id="ambientVol" type="range" min="0" max="1" step=".05" value="${a.ambient}"></label><label>Ефекти <input id="effectsVol" type="range" min="0" max="1" step=".05" value="${a.effects}"></label><button id="testSound">Перевірити клік</button></div><div class="section-title"><h2>Ручні сейви</h2></div><div class="save-grid">${manual.map(x=>`<article><b>Слот ${x.slot}</b><span>${x.state?'Є сейв':'Порожньо'}</span><div><button data-save="${x.slot}">Зберегти</button>${x.state?`<button data-load="${x.slot}">Завантажити</button>`:''}</div></article>`).join('')}</div>`;
@@ -485,11 +667,20 @@ async function renderSettings(){
   for(const [id,k] of [['masterVol','master'],['ambientVol','ambient'],['effectsVol','effects']])$('#'+id).oninput=e=>audioManager.setVolume(k,Number(e.target.value));
   $('#testSound').onclick=()=>audioManager.testEffect();
   root.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{await saveManual(G,Number(b.dataset.save));toast('ЗБЕРЕЖЕНО',`Слот ${b.dataset.save}`);renderSettings()});
-  root.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{const s=await loadManual(G.runId,Number(b.dataset.load));if(s){G=normalizeState(s);await persist();closeMenu();await renderGame();toast('ЗАВАНТАЖЕНО',`Слот ${b.dataset.load}`)}});
+  root.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{const run=G.runId,s=await loadManual(run,Number(b.dataset.load));if(await loadManualState(run,s)){closeMenu();await renderGame();toast('ЗАВАНТАЖЕНО',`Слот ${b.dataset.load}`)}});
 }
+
+function openAbout(){const o=$('#aboutOverlay');o.classList.remove('hidden');o.setAttribute('aria-hidden','false')}
+function closeAbout(){const o=$('#aboutOverlay');o.classList.add('hidden');o.setAttribute('aria-hidden','true')}
 
 $('#newGameBtn').onclick=()=>renderStart('new');
 $('#continueBtn').onclick=()=>renderStart('continue');
+$('#chaptersBtn').onclick=()=>renderStart('chapters');
+$('#savesBtn').onclick=()=>renderStart('saves');
+$('#aboutBtn').onclick=openAbout;
+$('#testModeBtn').onclick=()=>{if(testerUnlocked())renderStart('test')};
+$('#aboutCloseBtn').onclick=closeAbout;
+$('#aboutOverlay').onclick=e=>{if(e.target===$('#aboutOverlay'))closeAbout()};
 $('#beginGameBtn').onclick=beginGame;
 $('#menuBtn').onclick=()=>openMenu('inventory');
 $('#closeMenuBtn').onclick=closeMenu;
@@ -503,4 +694,5 @@ document.addEventListener('pointerdown',e=>{if(e.target.closest('button')){audio
 window.addEventListener('beforeunload',()=>{if(G)emergencySaveRun(G)});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&G)emergencySaveRun(G)});
 
+installTesterUnlock();
 renderStart('home');

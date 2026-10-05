@@ -5,18 +5,23 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b100d">
   <title>Десь не там</title>
-  <link rel="stylesheet" href="./styles.css?v=084">
+  <link rel="stylesheet" href="./styles.css?v=095">
+  <link rel="stylesheet" href="./ui-v085.css?v=095">
 </head>
 <body>
 <main id="app">
   <section id="startScreen" class="screen start-screen">
     <div class="start-card">
-      <div class="version">v0.8.4</div>
+      <div class="version">v0.9.6a</div>
       <h1>ДЕСЬ НЕ ТАМ</h1>
       <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
       <div id="startActions" class="start-actions">
         <button id="newGameBtn" class="primary big">Нова гра</button>
         <button id="continueBtn" class="big">Продовжити</button>
+        <button id="chaptersBtn" class="big">Глави</button>
+        <button id="savesBtn" class="big">Збереження</button>
+        <button id="aboutBtn" class="big">Про гру</button>
+        <button id="testModeBtn" class="big ghost hidden" aria-hidden="true">Тест</button>
       </div>
       <div id="runPicker" class="run-picker hidden"></div>
       <div id="storageStatus" class="storage-status small hidden"></div>
@@ -26,35 +31,17 @@
   <section id="howToScreen" class="screen howto-screen hidden">
     <div class="howto-wrap">
       <div class="howto-head">
-        <div class="howto-version">v0.8.4</div>
+        <div class="howto-version">v0.9.6a</div>
         <h1 class="howto-title">ДЕСЬ НЕ ТАМ</h1>
         <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
         <div class="howto-kicker">ПЕРЕД ТИМ, ЯК ЛІЗТИ В ЦЕ СЕЛО</div>
       </div>
-
-      <div class="howto-grid">
-        <article class="howto-card howto-lead">
-          <h2>Кожне ваше рішення має значення.</h2>
-          <p>Вибір може змінити стан героя, вплинути на ставлення до вас або вилізти боком значно пізніше. Не все корисне виявиться добрим, а не кожна хуйова ідея закінчиться хуйово.</p>
-          <p>Стани й характеристики можуть відкривати нові варіанти в діалогах і діях.</p>
-          <p>Будьте обережні – не все те, чим здається.</p>
-        </article>
-        <article class="howto-card">
-          <h2>Стани</h2>
-          <p>Стани змінюють характеристики героя. Деякі можна зняти. Деякі самі пройдуть. А деякі будуть з вами, поки ви не розгребете ту хуйню, яку наробили.</p>
-        </article>
-        <article class="howto-card">
-          <h2>Характеристики</h2>
-          <p>Сила, уважність, спритність, харизма й інші характеристики ростуть по ходу гри. Вони впливають на перевірки й інколи відкривають варіанти, яких ви інакше навіть не побачите.</p>
-        </article>
-        <article class="howto-card">
-          <h2>Інвентар і виживання</h2>
-          <p>Їжа, вода, бадьорість, здоровʼя, мокрий одяг і речі в кишенях – це не декор. Те, що ви взяли, зʼїли, вдягнули або лишили лежати, може знадобитися далеко не одразу.</p>
-        </article>
-        <article class="howto-card">
-          <h2>Памʼять персонажів</h2>
-          <p>Персонажі пам’ятатимуть, що ви перед ними витворяли. Не кожен наслідок вилізе одразу.</p>
-        </article>
+      <div class="howto-grid preview-grid">
+        <article class="howto-card howto-lead preview-lead"><h2>Ви прокинулись хуй зна де.</h2><p>Телефона нема. Нормального плану нема. Зате десь поруч уже шариться Євпапій.</p><p>Він вже тут. Значить, добром це не закінчиться.</p></article>
+        <article class="howto-card"><h2>Вибирайте самі</h2><p>Гра не буде казати, яка кнопка «правильна». Деяка хуйня вилізе боком не зараз, а через кілька глав.</p></article>
+        <article class="howto-card"><h2>Персонажі памʼятають</h2><p>Навіть якщо ви дуже сподівались, що вони забудуть. Особливо голуб.</p></article>
+        <article class="howto-card"><h2>Якщо здохли</h2><p>Є ручні сейви й чекпойнт початку глави. Бо починати все з нуля через одну тупу кнопку – то вже ту мач.</p></article>
+        <article class="howto-card"><h2>І ще одне</h2><p>Там ше багато чого буде. Якщо буде…</p></article>
       </div>
       <div class="howto-start"><button id="beginGameBtn" class="primary big">Почати гру</button></div>
     </div>
@@ -62,68 +49,76 @@
 
   <section id="gameScreen" class="game-shell hidden">
     <header class="game-top">
-      <div class="top-copy">
-        <div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.8.4</span></div>
-        <div class="world-line"><b id="timeLine"></b><span id="weatherLine"></span><span id="threatLine"></span></div>
-      </div>
+      <div class="top-copy"><div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.9.6a</span></div><div class="world-line"><b id="timeLine"></b><span id="weatherLine"></span><span id="threatLine"></span></div></div>
       <div id="miniNeeds" class="mini-needs" role="button" tabindex="0" aria-label="Відкрити потреби"></div>
       <div class="top-buttons"><button id="menuBtn" class="icon-btn">☰ Меню</button><button id="exitBtn" class="icon-btn ghost">Вийти</button></div>
     </header>
-
     <section class="stage">
       <div id="stageImage" class="stage-image"></div>
       <div class="quick-row"><div class="quick-label">Швидкий доступ</div><div id="quickSlots" class="quick-slots"></div></div>
       <details class="active-states" open><summary>Активні стани <span id="activeStateCount"></span></summary><div id="activeStates"></div></details>
-      <article class="story-card">
-        <div id="storyKicker" class="story-kicker">ГЛАВА 1</div>
-        <div id="storyText" class="story-text"></div>
-        <div id="storyExtras"></div>
-        <div id="storyChoices" class="story-actions"></div>
-      </article>
+      <article class="story-card"><div id="storyKicker" class="story-kicker">ГЛАВА 1</div><div id="storyText" class="story-text"></div><div id="storyExtras"></div><div id="storyChoices" class="story-actions"></div></article>
     </section>
   </section>
 
-  <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">
-    <div class="menu-sheet" role="dialog" aria-modal="true" aria-label="Меню гри">
-      <div class="menu-head"><div><div class="menu-title">Меню</div><div id="menuMeta" class="small"></div></div><button id="closeMenuBtn" class="icon-btn">Закрити</button></div>
-      <nav id="menuTabs" class="menu-tabs">
-        <button data-tab="states">Стани</button>
-        <button data-tab="stats">Характеристики</button>
-        <button data-tab="needs">Потреби</button>
-        <button data-tab="inventory">Інвентар</button>
-        <button data-tab="clothes">Шмотки</button>
-        <button data-tab="companions">Компаньйони</button>
-        <button data-tab="relations">Стосунки</button>
-        <button data-tab="map">Карта</button>
-        <button data-tab="shop">Крамничка</button>
-        <button data-tab="settings">⚙️ Налаштування</button>
-      </nav>
-      <section id="menuContent" class="menu-content"></section>
-    </div>
-  </div>
+  <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true"><div class="menu-sheet" role="dialog" aria-modal="true" aria-label="Меню гри"><div class="menu-head"><div><div class="menu-title">Меню</div><div id="menuMeta" class="small"></div></div><button id="closeMenuBtn" class="icon-btn">Закрити</button></div><nav id="menuTabs" class="menu-tabs"><button data-tab="states">Стани</button><button data-tab="stats">Характеристики</button><button data-tab="needs">Потреби</button><button data-tab="sleep">Сон</button><button data-tab="inventory">Інвентар</button><button data-tab="clothes">Шмотки</button><button data-tab="companions">Компаньйони</button><button data-tab="relations">Стосунки</button><button data-tab="map">Карта</button><button data-tab="shop">Крамничка</button><button data-tab="settings">⚙️ Налаштування</button></nav><section id="menuContent" class="menu-content"></section></div></div>
 
-  <div id="stateOverlay" class="state-overlay hidden" aria-hidden="true">
-    <div class="state-dialog" role="dialog" aria-modal="true">
-      <div class="state-dialog-title">НОВИЙ СТАН</div>
-      <div id="statePopup"></div>
-      <button id="stateOkBtn" class="primary state-ok">Поняв</button>
-    </div>
-  </div>
-
-  <div id="confirmOverlay" class="confirm-overlay hidden" aria-hidden="true">
-    <div class="confirm-dialog" role="dialog" aria-modal="true">
-      <div class="confirm-kicker">НОВА ГРА</div>
-      <div id="confirmTitle" class="confirm-title">Почати заново?</div>
-      <div id="confirmText" class="confirm-text"></div>
-      <div class="confirm-actions">
-        <button id="confirmCancelBtn" class="ghost">Скасувати</button>
-        <button id="confirmOkBtn" class="danger">Так, почати заново</button>
-      </div>
-    </div>
-  </div>
-
+  <div id="stateOverlay" class="state-overlay hidden" aria-hidden="true"><div class="state-dialog" role="dialog" aria-modal="true"><div class="state-dialog-title">НОВИЙ СТАН</div><div id="statePopup"></div><button id="stateOkBtn" class="primary state-ok">Поняв</button></div></div>
+  <div id="confirmOverlay" class="confirm-overlay hidden" aria-hidden="true"><div class="confirm-dialog" role="dialog" aria-modal="true"><div class="confirm-kicker">НОВА ГРА</div><div id="confirmTitle" class="confirm-title">Почати заново?</div><div id="confirmText" class="confirm-text"></div><div class="confirm-actions"><button id="confirmCancelBtn" class="ghost">Скасувати</button><button id="confirmOkBtn" class="danger">Так, почати заново</button></div></div></div>
+  <div id="aboutOverlay" class="about-overlay hidden" aria-hidden="true"><div class="about-dialog" role="dialog" aria-modal="true" aria-label="Про гру"><div class="about-head"><div><div class="confirm-kicker">ПРО ГРУ</div><div class="confirm-title">ДЕСЬ НЕ ТАМ</div></div><button id="aboutCloseBtn" class="icon-btn">✕</button></div><div class="about-copy"><p><b>«Десь не там»</b> – текстова хорор-комедія з виборами, виживанням і наслідками, які можуть вилізти значно пізніше.</p><p><b>Вибори.</b> Персонажі памʼятають ваші дії, а частина наслідків прихована.</p><p><b>Стани.</b> Голод, страх, холод, будуняра та інша хуйня реально впливають на характеристики й бій.</p><p><b>Прокачка.</b> За досвід росте загальний рівень героя та Євпапія. За очки прокачки ви самі вирішуєте, що піднімати.</p><p><b>Бій.</b> Хід за вами – дія, предмет або Євпапій. Стани й попередні рішення можуть дати бонус або підставити. Деякі сюжетні бої закінчуються не смертю ворога, а окремою сценою.</p><p><b>Сейви.</b> Автосейв спрацьовує після виборів, входу в нові сцени та сюжетних боїв. Також є ручні сейви й чекпойнт початку кожної глави.</p></div></div></div>
+  <div id="deathOverlay" class="death-overlay hidden" aria-hidden="true"><div class="death-dialog" role="dialog" aria-modal="true" aria-label="Ви здохли"><div class="death-kicker">КІНЕЦЬ ЦЬОГО РАЗУ</div><h2>ВИ ЗДОХЛИ</h2><p>Темно. Тихо. Цього разу село вас пережило.</p><div id="deathManualSaves" class="death-manual hidden"></div><div class="death-actions"><button id="deathManualBtn" type="button">Завантажити ручний сейв</button><button id="deathChapterBtn" type="button" class="primary">Почати цю главу заново</button><button id="deathMenuBtn" type="button" class="ghost">Вийти в меню</button></div></div></div>
   <div id="toast" class="toast hidden"></div>
 </main>
-<script type="module" src="./main.js?v=084"></script>
+<script type="importmap">
+{
+  "imports": {
+    "./engine.js?v=093": "./engine-v096.js?v=096",
+    "./battle.js?v=093": "./battle.js?v=096"
+  }
+}
+</script>
+<script id="startup095n">
+(()=>{
+  const ids=['newGameBtn','continueBtn','chaptersBtn','savesBtn'];
+  const native=window.indexedDB;
+  let restored=true;
+  const forceLocal=()=>{
+    if(!restored)return;restored=false;
+    try{Object.defineProperty(window,'indexedDB',{value:undefined,configurable:true,writable:true})}catch(e){try{window.indexedDB=undefined}catch(_){}}
+    setTimeout(()=>{
+      try{Object.defineProperty(window,'indexedDB',{value:native,configurable:true,writable:true})}catch(e){try{window.indexedDB=native}catch(_){}}
+      restored=true;
+    },1800);
+  };
+  window.addEventListener('DOMContentLoaded',()=>{for(const id of ids)document.getElementById(id)?.addEventListener('click',forceLocal,true)},{once:true});
+})();
+</script>
+<script type="module" src="./main.js?v=095"></script>
+<script type="module" src="./ui-v085.js?v=095"></script>
+<script type="module" src="./patch-v095.js?v=095"></script>
+<script type="module" src="./patch-v095b.js?v=095b"></script>
+<script type="module" src="./patch-v095c.js?v=095c"></script>
+<script type="module" src="./patch-v095d.js?v=095d"></script>
+<script type="module" src="./patch-v095e.js?v=095e"></script>
+<script type="module" src="./patch-v095f.js?v=095f"></script>
+<script type="module" src="./patch-v095g.js?v=095g"></script>
+<script type="module" src="./patch-v095h.js?v=095h"></script>
+<script type="module" src="./patch-v095i.js?v=095i"></script>
+<script type="module" src="./patch-v095j.js?v=095j"></script>
+<script type="module" src="./patch-v095k.js?v=095k"></script>
+<script type="module" src="./patch-v095l.js?v=095l"></script>
+<script type="module" src="./patch-v095m.js?v=095m"></script>
+<script type="module" src="./patch-v095n.js?v=095n"></script>
+<script type="module" src="./patch-v095o.js?v=095o"></script>
+<script type="module" src="./patch-v095p.js?v=095p"></script>
+<script type="module" src="./patch-v095q.js?v=095q"></script>
+<script type="module" src="./patch-v095r.js?v=095r"></script>
+<script type="module" src="./patch-v095s.js?v=095s"></script>
+<script type="module" src="./patch-v095t.js?v=095t"></script>
+<script type="module" src="./patch-v095u.js?v=095u"></script>
+<script type="module" src="./patch-v095v.js?v=095v"></script>
+<script type="module" src="./patch-v095w.js?v=095w"></script>
+<script type="module" src="./patch-v096.js?v=096"></script>
+<script type="module" src="./patch-v096a.js?v=096a"></script>
 </body>
 </html>

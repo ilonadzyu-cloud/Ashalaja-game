@@ -1,5 +1,5 @@
-export const CORE_VERSION=9;
-export const APP_VERSION='0.8.1';
+export const CORE_VERSION=10;
+export const APP_VERSION='0.9.3';
 // Namespace не міняємо, щоб старі сейви можна було нормалізувати.
 export const SAVE_NAMESPACE='des-ne-tam-v3';
 

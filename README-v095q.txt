@@ -1,0 +1,14 @@
+v0.9.5q – targeted playtest fixes
+- Battle on mobile now scrolls vertically instead of compressing/overlapping the lower UI.
+- Battle card label changed from «ГЕРОЙ» to «ВИ».
+- Throw-item mode remains in the normal scroll flow, so all owned onions/garlic can be reached, including вонюча цибуля.
+- Story battle now advances in-game time; knockout also adds unconscious time. The post-battle walk, return to Galya, long meal, and exit outside advance time too.
+- Timed statuses can expire during that elapsed time; СОБАКА-ПОДОЗРЄВАКА now has a 30-minute duration, including migration for old saves without a timer.
+- Dinner no longer heals HP to 100%; it restores food/water and leaves РОЗБИТА ГОЛОВА until actually treated.
+- Garlic dialogue only references Євпапій calling garlic useless if that happened in this run.
+- Story danger becomes HIGH before/around the shed attack instead of staying LOW.
+- Removed the service phrase «Незалежно від того, що ви вибрали…».
+- Early chapter 2 joins two pairs of forced «Далі» screens without deleting their text/effects.
+- ЄБАТОРІУМ description now explains that the timed state ends, but unlocked secret actions remain.
+- After a story battle, the full-screen battle DOM is removed completely to avoid the WebKit black-screen hang before the key scene.
+- No wholesale story rewrite: fixes are layered on top of v0.9.5p.

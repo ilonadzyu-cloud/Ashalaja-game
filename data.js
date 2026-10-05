@@ -34,6 +34,14 @@ export const STATUS_DEFS={
   angry:{name:'ЗЛИЙ',portrait:'./portrait_angry.png',blurb:'Настрій когось вʼєбати.',mods:{strength:2,pofigism:1,charisma:-2},remove:'заспокоїтись.'},
   suspicious:{name:'СОБАКА-ПОДОЗРЄВАКА',portrait:'./portrait_suspicious.png',blurb:'Шось тут не так.',mods:{attention:2,charisma:-1},remove:'коли відпустить.'},
   skunk:{name:'ДИКИЙ СКУНС',portrait:'./portrait_tired.png',blurb:'Помитись було б непогано.',mods:{pofigism:1,charisma:-3},remove:'нормально помитись.'},
+  cowLicked:{
+    name:'ВАС ОБЛИЗАЛА КОРОВА',portrait:'./portrait_base.png',blurb:'',
+    mods:{strength:5,attention:5,agility:5,charisma:5,pofigism:5,ahui:5},
+    durationMinutes:60,
+    remove:'сам пройде через 1 ігрову годину.'
+  },
+  headInjury:{name:'РОЗБИТА ГОЛОВА',portrait:'./portrait_worry.png',blurb:'Голова гуде, на потилиці кров.',mods:{attention:-1,agility:-1},remove:'рану треба обробити й перевʼязати.'},
+  bump:{name:'ШИШКА',portrait:'./portrait_worry.png',blurb:'Могло бути й гірше.',mods:{attention:-1},remove:'сама пройде з часом.'},
   tipsy:{name:'ПІД ГРАДУСОМ',portrait:'./portrait_base.png',blurb:'Ви під градусом.',mods:{pofigism:2,charisma:1,attention:-1,agility:-1},durationMinutes:90,remove:'90 ігрових хвилин після останньої горілки.'}
 };
 
@@ -58,7 +66,10 @@ export const ITEM_DEFS={
   medkit:{name:'Аптечка',icon:'🩹',category:'Ліки',stack:2,description:'Коли вже нормально так припекло.',useEffects:[{type:'health',value:25}]},
   knife:{name:'Ніж',icon:'🔪',category:'Зброя',stack:1,description:'Інструмент. І зброя. Залежить, шо ви надумали.'},
   garlic:{name:'Часник',icon:'🧄',category:'Якась хуйня',stack:5,description:'Баба Галя сказала, що згодиться.'},
-  onion:{name:'Цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Звичайна цибуля. Пока що.'},
+  onion:{name:'Звичайна цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Звичайна цибуля. В бою можна кинути.'},
+  onion_angry:{name:'Зла цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Вгризається й продовжує кусати.'},
+  onion_smelly:{name:'Вонюча цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Від неї можна й вирубитись.'},
+  old_key:{name:'Старий ключ',icon:'🗝️',category:'Якась хуйня',stack:1,description:'Старий ключ. Від чого – поки незрозуміло.'},
   holy_water:{name:'Свята вода',icon:'✝️',category:'Якась хуйня',stack:3,description:'На 60 хвилин послаблює кожен негативний модифікатор від станів на 1.',useEffects:[{type:'statusAdd',id:'blessed'}]},
   potion_unknown:{name:'??? Зілля',icon:'🧪',category:'Якась хуйня',stack:3,description:'Ефект: невідомий.',unknown:true}
 };
