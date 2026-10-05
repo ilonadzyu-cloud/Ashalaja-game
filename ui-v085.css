@@ -23,7 +23,7 @@
   overflow:hidden;
   background:
     linear-gradient(180deg,rgba(4,8,8,.22) 0%,rgba(4,8,8,.06) 42%,rgba(4,7,6,.32) 100%),
-    url('./bg.jpg?v=085') center center/cover no-repeat;
+    url('./start_menu_bg.jpg?v=096a-public') center center/cover no-repeat;
 }
 .start-screen::before{
   content:"";

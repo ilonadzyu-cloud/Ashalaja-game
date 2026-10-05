@@ -33,28 +33,11 @@ const TESTER_UNLOCK_KEY='des-ne-tam-tester-unlocked-v1';
 const TESTER_CODE_HASH='58346b69699f6dadc90ed95b5dd126bc42de7130d6b8213d83bc5b0cf59e885d';
 let testerTapCount=0;
 let testerTapTimer=null;
-function testerUnlocked(){try{return localStorage.getItem(TESTER_UNLOCK_KEY)==='1'}catch{return false}}
+function testerUnlocked(){return false}
 function syncTesterAccess(){const b=$('#testModeBtn');if(!b)return;const on=testerUnlocked();b.classList.toggle('hidden',!on);b.setAttribute('aria-hidden',on?'false':'true')}
 async function sha256Text(value){const bytes=new TextEncoder().encode(String(value||''));const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('')}
-async function tryUnlockTester(){
-  const entered=window.prompt('КОД ТЕСТЕРА');
-  if(entered===null)return;
-  let ok=false;
-  try{ok=(await sha256Text(entered.trim()))===TESTER_CODE_HASH}catch{}
-  if(!ok){toast('НЕ ТОЙ КОД','Тестовий режим лишився закритим.');return}
-  try{localStorage.setItem(TESTER_UNLOCK_KEY,'1')}catch{}
-  syncTesterAccess();toast('ТЕСТ ВІДКРИТО','Кнопка зʼявилась у головному меню.');
-}
-function installTesterUnlock(){
-  const version=$('.start-card .version');if(!version)return;
-  version.style.cursor='default';
-  version.addEventListener('click',()=>{
-    clearTimeout(testerTapTimer);testerTapTimer=setTimeout(()=>{testerTapCount=0},2800);
-    testerTapCount+=1;
-    if(testerTapCount>=7){testerTapCount=0;clearTimeout(testerTapTimer);tryUnlockTester()}
-  });
-  syncTesterAccess();
-}
+async function tryUnlockTester(){return false}
+function installTesterUnlock(){syncTesterAccess()}
 
 const statFlavor={
   strength:{1:'Пока не Геракл.',2:'Ну, лавку вже не боїтесь.',3:'Вже можна шось важче за голуба.',4:'Може, двері самі відкриються.',5:'Село починає берегти меблі.'},
@@ -678,7 +661,7 @@ $('#continueBtn').onclick=()=>renderStart('continue');
 $('#chaptersBtn').onclick=()=>renderStart('chapters');
 $('#savesBtn').onclick=()=>renderStart('saves');
 $('#aboutBtn').onclick=openAbout;
-$('#testModeBtn').onclick=()=>{if(testerUnlocked())renderStart('test')};
+$('#testModeBtn')?.addEventListener('click',()=>{});
 $('#aboutCloseBtn').onclick=closeAbout;
 $('#aboutOverlay').onclick=e=>{if(e.target===$('#aboutOverlay'))closeAbout()};
 $('#beginGameBtn').onclick=beginGame;
