@@ -1,10 +1,10 @@
 // v0.9.5v – restore ЗЛИЙ, fix chapter visuals/copy, prayer order,
 // character cards, and keep actors facing the scene instead of away from it.
 
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {STATUS_DEFS} from './data.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {STATUS_DEFS} from './data.js?v=096b';
 
 const WOMAN095V={
   idle:'./wake_shadow_idle_095v.png',
@@ -258,7 +258,7 @@ function patchStateMenuCopy095v(){
   const title=menu.querySelector('.section-title h2')?.textContent?.trim();
   if(title==='Стани'){
     const card=menu.querySelector('.info-card');
-    if(card)card.textContent='На головному екрані показані активні стани. Тут – 9 сюжетних станів, які реально змінюють репліки, характеристики або дії.';
+    if(card)card.textContent='На головному екрані видно, що діє на вас прямо зараз. Тут лишається все, що ви вже встигли пережити.';
   }
 }
 

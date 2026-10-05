@@ -1,7 +1,7 @@
-export * from './engine.js?core=093';
-import * as core from './engine.js?core=093';
-import {STAT_KEYS} from './config.js?v=093';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=093';
+export * from './engine.js?core=096b';
+import * as core from './engine.js?core=096b';
+import {STAT_KEYS} from './config.js?v=096b';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=096b';
 
 const ALLOWED_STATUSES=new Set([
   'hangover','pigeonHumiliated','suspicious','scared','angry',

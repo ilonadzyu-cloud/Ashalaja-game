@@ -1,8 +1,8 @@
 // v0.9.5j – battle flow, starter onion, guaranteed mystery potion, clearer exit button.
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {ITEM_DEFS} from './data.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const asArray=x=>Array.isArray(x)?x:[];
 const count=(s,id)=>(s?.inventory||[]).filter(x=>x.id===id).reduce((n,x)=>n+Number(x.qty||0),0);

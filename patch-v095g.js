@@ -1,6 +1,6 @@
 // v0.9.5g – Galina doorway visual + important item acquisition notifications.
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 const galinaDoor=()=>({role:'npc galina-door095g',src:'./galina_base.png',position:'npc'});
 

@@ -1,5 +1,5 @@
 // v0.9.5h – make Євпапій's ancient-pigeon/cat story mandatory before state replies.
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
 
 const hasStatus=(s,id)=>Boolean(s?.activeStatuses?.includes(id));
 

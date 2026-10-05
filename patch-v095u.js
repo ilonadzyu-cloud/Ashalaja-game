@@ -2,12 +2,12 @@
 // This patch does not rewrite the plot. It trims duplicate physical states,
 // keeps the funny narrative states, and makes the two unusual stats understandable.
 
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {STATUS_DEFS} from './data.js?v=093';
-import {STAT_DESCRIPTIONS} from './config.js?v=093';
-import {effectiveStat} from './engine.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {STATUS_DEFS} from './data.js?v=096b';
+import {STAT_DESCRIPTIONS} from './config.js?v=096b';
+import {effectiveStat} from './engine.js?v=096b';
 
 const ORDER=[
   'hangover','pigeonHumiliated','suspicious','scared',
@@ -176,11 +176,11 @@ function patchMenuCopy095u(){
   const title=menu.querySelector('.section-title h2')?.textContent?.trim();
   if(title==='Потреби'){
     const card=menu.querySelector('.info-card');
-    if(card)card.textContent='Потреби працюють напряму. Низькі здоровʼя, вода й ситість не створюють окремих станів. Бадьорість нижче 35% дає стан «ЗАЄБАВСЯ»; він знімається, коли бадьорість підніметься вище 55%.';
+    if(card)card.textContent='Слідкуйте за здоровʼям, водою, ситістю й бадьорістю. Чим нижчі показники – тим хуйовіше герою.';
   }
   if(title==='Стани'){
     const card=menu.querySelector('.info-card');
-    if(card)card.textContent='На головному екрані показані активні стани. Тут – лише 8 сюжетних станів, які реально змінюють репліки, характеристики або дії.';
+    if(card)card.textContent='На головному екрані видно, що діє на вас прямо зараз. Тут лишається все, що ви вже встигли пережити.';
   }
 
   if(title==='Характеристики'){

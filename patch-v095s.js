@@ -1,6 +1,6 @@
 // v0.9.5s – character visibility + item discovery + immersive UI labels.
 // No story rewrite: this patch only restores visual actors, item knowledge states and UI wording.
-import {ITEM_DEFS} from './data.js?v=093';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const UNKNOWN_IDS=['garlic','onion','onion_angry','onion_smelly','potion_unknown'];
 const KNOWN={

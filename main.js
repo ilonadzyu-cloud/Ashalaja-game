@@ -1,12 +1,12 @@
-import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=093';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=093';
-import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem,spendHeroPoint,spendEvpPoint,addHeroXp,addEvpXp} from './engine.js?v=093';
-import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,saveChapterCheckpoint,loadChapterCheckpoint,listChapterCheckpoints,clearChapterCheckpointsAfter,emergencySaveRun,storageCapabilities} from './storage.js?v=093';
-import {audioManager} from './audio.js?v=071';
-import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=093';
-import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {getChapter3Scene,CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {openStoryBattle} from './battle.js?v=093';
+import {STAT_KEYS,STAT_LABELS,STAT_DESCRIPTIONS} from './config.js?v=096b';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=096b';
+import {createInitialState,normalizeState,formatTime,threatInfo,thermal,equipmentTotals,equip,statModifiers,effectiveStat,itemCount,assignQuickSlot,useItem,executeAction,previewAction,addItem,spendHeroPoint,spendEvpPoint,addHeroXp,addEvpXp} from './engine.js?v=096b';
+import {listRuns,loadRun,saveRun,clearRun,saveManual,loadManual,listManual,saveChapterCheckpoint,loadChapterCheckpoint,listChapterCheckpoints,clearChapterCheckpointsAfter,emergencySaveRun,storageCapabilities} from './storage.js?v=096b';
+import {audioManager} from './audio.js?v=096b';
+import {getChapter1Scene,CHAPTER1_SCENES,resolveSceneValue} from './chapter1.js?v=096b';
+import {getChapter2Scene,CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {getChapter3Scene,CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {openStoryBattle} from './battle.js?v=096b';
 
 function getGameScene(state){
   const id=state?.story?.sceneId||state?.scene||'intro';
@@ -496,7 +496,7 @@ function needFlavor(kind,v){
 
 function renderNeeds(){
   const rows=[['Здоровʼя',G.health,'health'],['Ситість',G.needs.satiety,'hunger'],['Вода',G.needs.water,'thirst'],['Бадьорість',G.needs.energy,'fatigue']];
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Потреби</h2></div><div class="info-card">Чим більше відсотків, тим краще. Плюс – добре. Мінус – хуйово. На 40% і нижче вже починаються стани, на 20% – сильні дебафи, 5% і нижче – критично. Їжа відновлює ситість, напої – воду, перепочинок – бадьорість, аптечка – здоровʼя. Брудний одяг можна випрати або змінити. При 0% здоровʼя гра завершується.</div><div class="needs-list">${rows.map(([label,value,kind])=>`<article class="need-card"><div class="need-row"><b>${label}</b><b>${Math.round(value)}%</b></div><div class="need-bar ${needTone(value)}"><span style="width:${Math.max(0,Math.min(100,value))}%"></span></div><div class="stat-flavor">${esc(needFlavor(kind,value))}</div></article>`).join('')}</div>`;
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Потреби</h2></div><div class="info-card">Слідкуйте за здоровʼям, водою, ситістю й бадьорістю. Чим нижчий показник – тим хуйовіше герою. Їжа відновлює ситість, напої – воду, відпочинок – бадьорість, аптечка – здоровʼя. При 0% здоровʼя ви здохли.</div><div class="needs-list">${rows.map(([label,value,kind])=>`<article class="need-card"><div class="need-row"><b>${label}</b><b>${Math.round(value)}%</b></div><div class="need-bar ${needTone(value)}"><span style="width:${Math.max(0,Math.min(100,value))}%"></span></div><div class="stat-flavor">${esc(needFlavor(kind,value))}</div></article>`).join('')}</div>`;
 }
 
 function sleepPlace(){
@@ -558,10 +558,10 @@ function renderSleep(){
 
 function renderStates(){
   const known=new Set(G.discoveredStatuses);
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Стани</h2></div><div class="info-card">На головному екрані показані активні стани. Тут – усе, що герой уже відкрив.</div><div class="state-list">${Object.entries(STATUS_DEFS).map(([id,d])=>{
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Стани</h2></div><div class="info-card">На головному екрані видно, що діє на вас прямо зараз. Тут лишається все, що ви вже встигли пережити.</div><div class="state-list">${Object.entries(STATUS_DEFS).map(([id,d])=>{
     if(!known.has(id))return'<article class="locked-card"><b>???</b><span>Ще не відкрито.</span></article>';
     const effects=statusEffectText(id);
-    return `<article class="state-card ${G.activeStatuses.includes(id)?'active':''}"><b>${esc(d.name)}</b>${d.blurb?`<span>${esc(d.blurb)}</span>`:''}${effects?`<small><b>ефект:</b> ${esc(effects)}</small>`:''}<small><b>як позбутись:</b> ${esc(d.remove||'')}</small>${d.persistentUnlock?'<small><b>особливий ефект:</b> відкриває секретні дії [ЄБАТОРІУМ].</small>':''}</article>`;
+    return `<article class="state-card ${G.activeStatuses.includes(id)?'active':''}"><b>${esc(d.name)}</b>${d.blurb?`<span>${esc(d.blurb)}</span>`:''}${effects?`<small><b>ефект:</b> ${esc(effects)}</small>`:''}<small><b>як позбутись:</b> ${esc(d.remove||'')}</small>${d.persistentUnlock?'<small><b>ще:</b> іноді зʼявляються окремі відбиті варіанти [ЄБАТОРІУМ].</small>':''}</article>`;
   }).join('')}</div>`;
 }
 
@@ -590,7 +590,7 @@ function renderCompanions(){
 
 function renderRelations(){
   const known=Object.values(G.relationships).filter(r=>r.known);
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Стосунки</h2></div><div class="info-card">Усе має наслідки. І не завжди бути добреньким – добре. Персонажі памʼятають, що ви витворяли, але цифри й приховані наслідки гра вам не спойлерить.</div>${known.length?known.map(r=>`<article class="relation-card"><b>${esc(r.name)}</b><span>Що саме цей персонаж про вас думає, доведеться поняти по ходу.</span></article>`).join(''):'<div class="empty-state">Ше нема кого бісити.</div>'}`;
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Стосунки</h2></div><div class="info-card">Персонажі памʼятають, шо ви витворяли. Що саме вони про вас думають – доведеться поняти по ходу.</div>${known.length?known.map(r=>`<article class="relation-card"><b>${esc(r.name)}</b><span>Що саме цей персонаж про вас думає, доведеться поняти по ходу.</span></article>`).join(''):'<div class="empty-state">Ше нема кого бісити.</div>'}`;
 }
 
 function renderMap(){
@@ -623,7 +623,7 @@ function renderMap(){
       <img src="./map_village.jpg?v=084" alt="Карта села">
       ${unlocked?`<div class="map-overlays">${overlays}</div>`:`<div class="map-lock-copy"><b>ПОКИ ЗАКРИТО</b><span>Спочатку треба хоча б трохи розібратись, де ви взагалі опинились.</span></div>`}
     </div>
-    ${unlocked?`<div class="map-help">Назви зʼявляються прямо на карті тільки після того, як ви реально побували в локації. Знаки питання – місця, про які ви поки знаєте приблизно нихуя.</div>`:''}`;
+    ${unlocked?`<div class="map-help">Підписані тільки місця, де ви вже були. Решта – хуй зна шо.</div>`:''}`;
 }
 
 function renderShop(){
@@ -634,7 +634,7 @@ function renderShop(){
     {id:'wood',title:'Нарубати дрова',pay:4,minutes:25,repeat:'daily',done:Number(G.flags.choppedWoodDay||0)===day,effects:[{type:'money',value:4},{type:'stat',key:'strength',value:1}],hidden:[{type:'flag',key:'choppedWood',value:true},{type:'flag',key:'choppedWoodDay',value:day}]},
     {id:'deal',title:'Підписатись на підозріле діло',pay:8,minutes:10,repeat:'once',done:Boolean(G.flags.suspiciousDeal),effects:[{type:'money',value:8}],hidden:[{type:'flag',key:'suspiciousDeal',value:true},{type:'flag',key:'suspiciousDealDay',value:day},{type:'flag',key:'suspiciousDealConsequence',value:true},{type:'flag',key:'suspiciousDealConsequencePending',value:true}]}
   ];
-  $('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2><span><b>${G.money}</b> монет</span></div>${G.flags.shopUnlocked?`<div class="shop-money">У вас зараз <b>${G.money} монет</b>.</div><div class="shop-grid">${items.map(([id,p])=>`<article class="item-card"><div class="item-icon">${ITEM_DEFS[id].icon}</div><div class="item-copy"><b>${esc(ITEM_DEFS[id].name)}</b><span>${p} мон.</span><button data-buy="${id}" data-price="${p}">Купити</button></div></article>`).join('')}</div><div class="section-title shop-work-title"><h2>Як заробити</h2><span>День ${day}</span></div><div class="info-card">Звичайна робота поновлюється кожного нового ігрового дня.</div><div class="shop-jobs">${jobs.map(j=>`<article class="job-card ${j.done?'done':''}"><div><b>${esc(j.title)}</b><span>${j.done?(j.repeat==='daily'?'На сьогодні вже зробили.':'Уже зробили.'):`${j.minutes} хв · +${j.pay} монет`}</span></div><button data-job="${j.id}" ${j.done?'disabled':''}>${j.done?'Готово':'Взятись'}</button></article>`).join('')}</div>`:'<div class="locked-big">Ще закрито.</div>'}`;
+  $('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2><span><b>${G.money}</b> монет</span></div>${G.flags.shopUnlocked?`<div class="shop-money">У вас зараз <b>${G.money} монет</b>.</div><div class="shop-grid">${items.map(([id,p])=>`<article class="item-card"><div class="item-icon">${ITEM_DEFS[id].icon}</div><div class="item-copy"><b>${esc(ITEM_DEFS[id].name)}</b><span>${p} мон.</span><button data-buy="${id}" data-price="${p}">Купити</button></div></article>`).join('')}</div><div class="section-title shop-work-title"><h2>Як заробити</h2><span>День ${day}</span></div><div class="info-card">Підмести двір і нарубати дрова можна раз на день.</div><div class="shop-jobs">${jobs.map(j=>`<article class="job-card ${j.done?'done':''}"><div><b>${esc(j.title)}</b><span>${j.done?(j.repeat==='daily'?'На сьогодні вже зробили.':'Уже зробили.'):`${j.minutes} хв · +${j.pay} монет`}</span></div><button data-job="${j.id}" ${j.done?'disabled':''}>${j.done?'Готово':'Взятись'}</button></article>`).join('')}</div>`:'<div class="locked-big">Ще закрито.</div>'}`;
   document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{const p=Number(b.dataset.price);if(G.money<p){toast('НЕМА ГРОШЕЙ','Ну от так.');return}if(!addItem(G,b.dataset.buy,1)){toast('НЕМА МІСЦЯ','Інвентар забитий.');return}G.money-=p;await persist();renderShop()});
   document.querySelectorAll('[data-job]').forEach(b=>b.onclick=async()=>{
     const j=jobs.find(x=>x.id===b.dataset.job);if(!j||j.done)return;

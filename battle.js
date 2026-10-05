@@ -1,7 +1,7 @@
 // v0.9.5j – combat + story branches + first-battle help + pre-battle modifiers.
-import {createInitialState,normalizeState,effectiveStat,equipmentTotals,itemCount,removeItem,clone,addHeroXp,addEvpXp,executeAction} from './engine.js?v=093';
-import {STATUS_DEFS,ITEM_DEFS} from './data.js?v=093';
-import {loadRun} from './storage.js?v=093';
+import {createInitialState,normalizeState,effectiveStat,equipmentTotals,itemCount,removeItem,clone,addHeroXp,addEvpXp,executeAction} from './engine.js?v=096b';
+import {STATUS_DEFS,ITEM_DEFS} from './data.js?v=096b';
+import {loadRun} from './storage.js?v=096b';
 
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));

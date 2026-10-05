@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b100d">
   <title>Десь не там</title>
-  <link rel="stylesheet" href="./styles.css?v=095">
-  <link rel="stylesheet" href="./ui-v085.css?v=095">
+  <link rel="stylesheet" href="./styles.css?v=096b">
+  <link rel="stylesheet" href="./ui-v085.css?v=096b">
 </head>
 <body>
 <main id="app">
   <section id="startScreen" class="screen start-screen">
     <div class="start-card">
-      <div class="version">v0.9.6a</div>
+      <div class="version">v0.9.6b</div>
       <h1>ДЕСЬ НЕ ТАМ</h1>
       <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
       <div id="startActions" class="start-actions">
@@ -30,7 +30,7 @@
   <section id="howToScreen" class="screen howto-screen hidden">
     <div class="howto-wrap">
       <div class="howto-head">
-        <div class="howto-version">v0.9.6a</div>
+        <div class="howto-version">v0.9.6b</div>
         <h1 class="howto-title">ДЕСЬ НЕ ТАМ</h1>
         <p class="subtitle">текстова виживалка з комедією, крінжем і хорором</p>
         <div class="howto-kicker">ПЕРЕД ТИМ, ЯК ЛІЗТИ В ЦЕ СЕЛО</div>
@@ -48,7 +48,7 @@
 
   <section id="gameScreen" class="game-shell hidden">
     <header class="game-top">
-      <div class="top-copy"><div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.9.6a</span></div><div class="world-line"><b id="timeLine"></b><span id="weatherLine"></span><span id="threatLine"></span></div></div>
+      <div class="top-copy"><div class="game-name">ДЕСЬ НЕ ТАМ <span>v0.9.6b</span></div><div class="world-line"><b id="timeLine"></b><span id="weatherLine"></span><span id="threatLine"></span></div></div>
       <div id="miniNeeds" class="mini-needs" role="button" tabindex="0" aria-label="Відкрити потреби"></div>
       <div class="top-buttons"><button id="menuBtn" class="icon-btn">☰ Меню</button><button id="exitBtn" class="icon-btn ghost">Вийти</button></div>
     </header>
@@ -64,15 +64,14 @@
 
   <div id="stateOverlay" class="state-overlay hidden" aria-hidden="true"><div class="state-dialog" role="dialog" aria-modal="true"><div class="state-dialog-title">НОВИЙ СТАН</div><div id="statePopup"></div><button id="stateOkBtn" class="primary state-ok">Поняв</button></div></div>
   <div id="confirmOverlay" class="confirm-overlay hidden" aria-hidden="true"><div class="confirm-dialog" role="dialog" aria-modal="true"><div class="confirm-kicker">НОВА ГРА</div><div id="confirmTitle" class="confirm-title">Почати заново?</div><div id="confirmText" class="confirm-text"></div><div class="confirm-actions"><button id="confirmCancelBtn" class="ghost">Скасувати</button><button id="confirmOkBtn" class="danger">Так, почати заново</button></div></div></div>
-  <div id="aboutOverlay" class="about-overlay hidden" aria-hidden="true"><div class="about-dialog" role="dialog" aria-modal="true" aria-label="Про гру"><div class="about-head"><div><div class="confirm-kicker">ПРО ГРУ</div><div class="confirm-title">ДЕСЬ НЕ ТАМ</div></div><button id="aboutCloseBtn" class="icon-btn">✕</button></div><div class="about-copy"><p><b>«Десь не там»</b> – текстова хорор-комедія з виборами, виживанням і наслідками, які можуть вилізти значно пізніше.</p><p><b>Вибори.</b> Персонажі памʼятають ваші дії, а частина наслідків прихована.</p><p><b>Стани.</b> Голод, страх, холод, будуняра та інша хуйня реально впливають на характеристики й бій.</p><p><b>Прокачка.</b> За досвід росте загальний рівень героя та Євпапія. За очки прокачки ви самі вирішуєте, що піднімати.</p><p><b>Бій.</b> Хід за вами – дія, предмет або Євпапій. Стани й попередні рішення можуть дати бонус або підставити. Деякі сюжетні бої закінчуються не смертю ворога, а окремою сценою.</p><p><b>Сейви.</b> Автосейв спрацьовує після виборів, входу в нові сцени та сюжетних боїв. Також є ручні сейви й чекпойнт початку кожної глави.</p></div></div></div>
+  <div id="aboutOverlay" class="about-overlay hidden" aria-hidden="true"><div class="about-dialog" role="dialog" aria-modal="true" aria-label="Про гру"><div class="about-head"><div><div class="confirm-kicker">ПРО ГРУ</div><div class="confirm-title">ДЕСЬ НЕ ТАМ</div></div><button id="aboutCloseBtn" class="icon-btn">✕</button></div><div class="about-copy"><p><b>«Десь не там»</b> – текстова хорор-комедія з виборами, виживанням і наслідками, які можуть вилізти значно пізніше.</p><p><b>Вибори.</b> Персонажі памʼятають, шо ви витворяли. Деяка хуйня може відгукнутись не одразу.</p><p><b>Стани.</b> Будуняра, страх, злість, підозра, втома та інша хуйня можуть міняти характеристики й доступні дії.</p><p><b>Прокачка.</b> За деякі дії й сутички ви отримуєте досвід. 100 XP = новий рівень і 1 очко прокачки. Куди його вкласти – вирішуєте самі.</p><p><b>Бій.</b> За хід можна вдарити, відскочити, використати предмет або Євпапія. Не кожну сутичку треба вигравати однаково.</p><p><b>Сейви.</b> Гра регулярно зберігається сама. Також є ручні сейви й збереження на початку кожної глави.</p></div></div></div>
   <div id="deathOverlay" class="death-overlay hidden" aria-hidden="true"><div class="death-dialog" role="dialog" aria-modal="true" aria-label="Ви здохли"><div class="death-kicker">КІНЕЦЬ ЦЬОГО РАЗУ</div><h2>ВИ ЗДОХЛИ</h2><p>Темно. Тихо. Цього разу село вас пережило.</p><div id="deathManualSaves" class="death-manual hidden"></div><div class="death-actions"><button id="deathManualBtn" type="button">Завантажити ручний сейв</button><button id="deathChapterBtn" type="button" class="primary">Почати цю главу заново</button><button id="deathMenuBtn" type="button" class="ghost">Вийти в меню</button></div></div></div>
   <div id="toast" class="toast hidden"></div>
 </main>
 <script type="importmap">
 {
   "imports": {
-    "./engine.js?v=093": "./engine-v096.js?v=096",
-    "./battle.js?v=093": "./battle.js?v=096"
+    "./engine.js?v=096b": "./engine-v096.js?v=096b"
   }
 }
 </script>
@@ -92,32 +91,32 @@
   window.addEventListener('DOMContentLoaded',()=>{for(const id of ids)document.getElementById(id)?.addEventListener('click',forceLocal,true)},{once:true});
 })();
 </script>
-<script type="module" src="./main.js?v=095"></script>
-<script type="module" src="./ui-v085.js?v=095"></script>
-<script type="module" src="./patch-v095.js?v=095"></script>
-<script type="module" src="./patch-v095b.js?v=095b"></script>
-<script type="module" src="./patch-v095c.js?v=095c"></script>
-<script type="module" src="./patch-v095d.js?v=095d"></script>
-<script type="module" src="./patch-v095e.js?v=095e"></script>
-<script type="module" src="./patch-v095f.js?v=095f"></script>
-<script type="module" src="./patch-v095g.js?v=095g"></script>
-<script type="module" src="./patch-v095h.js?v=095h"></script>
-<script type="module" src="./patch-v095i.js?v=095i"></script>
-<script type="module" src="./patch-v095j.js?v=095j"></script>
-<script type="module" src="./patch-v095k.js?v=095k"></script>
-<script type="module" src="./patch-v095l.js?v=095l"></script>
-<script type="module" src="./patch-v095m.js?v=095m"></script>
-<script type="module" src="./patch-v095n.js?v=095n"></script>
-<script type="module" src="./patch-v095o.js?v=095o"></script>
-<script type="module" src="./patch-v095p.js?v=095p"></script>
-<script type="module" src="./patch-v095q.js?v=095q"></script>
-<script type="module" src="./patch-v095r.js?v=095r"></script>
-<script type="module" src="./patch-v095s.js?v=095s"></script>
-<script type="module" src="./patch-v095t.js?v=095t"></script>
-<script type="module" src="./patch-v095u.js?v=095u"></script>
-<script type="module" src="./patch-v095v.js?v=095v"></script>
-<script type="module" src="./patch-v095w.js?v=095w"></script>
-<script type="module" src="./patch-v096.js?v=096"></script>
-<script type="module" src="./patch-v096a.js?v=096a"></script>
+<script type="module" src="./main.js?v=096b"></script>
+<script type="module" src="./ui-v085.js?v=096b"></script>
+<script type="module" src="./patch-v095.js?v=096b"></script>
+<script type="module" src="./patch-v095b.js?v=096b"></script>
+<script type="module" src="./patch-v095c.js?v=096b"></script>
+<script type="module" src="./patch-v095d.js?v=096b"></script>
+<script type="module" src="./patch-v095e.js?v=096b"></script>
+<script type="module" src="./patch-v095f.js?v=096b"></script>
+<script type="module" src="./patch-v095g.js?v=096b"></script>
+<script type="module" src="./patch-v095h.js?v=096b"></script>
+<script type="module" src="./patch-v095i.js?v=096b"></script>
+<script type="module" src="./patch-v095j.js?v=096b"></script>
+<script type="module" src="./patch-v095k.js?v=096b"></script>
+<script type="module" src="./patch-v095l.js?v=096b"></script>
+<script type="module" src="./patch-v095m.js?v=096b"></script>
+<script type="module" src="./patch-v095n.js?v=096b"></script>
+<script type="module" src="./patch-v095o.js?v=096b"></script>
+<script type="module" src="./patch-v095p.js?v=096b"></script>
+<script type="module" src="./patch-v095q.js?v=096b"></script>
+<script type="module" src="./patch-v095r.js?v=096b"></script>
+<script type="module" src="./patch-v095s.js?v=096b"></script>
+<script type="module" src="./patch-v095t.js?v=096b"></script>
+<script type="module" src="./patch-v095u.js?v=096b"></script>
+<script type="module" src="./patch-v095v.js?v=096b"></script>
+<script type="module" src="./patch-v095w.js?v=096b"></script>
+<script type="module" src="./patch-v096.js?v=096b"></script>
+<script type="module" src="./patch-v096a.js?v=096b"></script>
 </body>
 </html>

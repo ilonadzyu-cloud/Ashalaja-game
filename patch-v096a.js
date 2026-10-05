@@ -1,5 +1,5 @@
 // v0.9.6a – hotfix: missing hero art + duplicated hooded-figure reaction.
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 function fixRepeatedReaction096a(){
   const sc=CHAPTER3_SCENES.ch3_state_yebatorium;

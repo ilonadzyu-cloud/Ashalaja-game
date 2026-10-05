@@ -1,6 +1,6 @@
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {ITEM_DEFS} from './data.js?v=093';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const A095B={
   hero:{

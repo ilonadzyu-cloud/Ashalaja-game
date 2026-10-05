@@ -1,9 +1,9 @@
 // v0.9.5q – targeted playtest fixes only: battle mobile layout, time flow,
 // danger label, meal healing, branch-safe garlic line, smoother early chapter 2,
 // and clearer persistent ЄБАТОРІУМ unlock wording.
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {STATUS_DEFS} from './data.js?v=093';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {STATUS_DEFS} from './data.js?v=096b';
 
 const asArray=x=>Array.isArray(x)?x:[];
 

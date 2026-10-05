@@ -1,11 +1,11 @@
-export * from './engine.js?core=093';
-import * as core from './engine.js?core=093';
-import {STAT_KEYS} from './config.js?v=093';
-import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=093';
+export * from './engine.js?core=096b';
+import * as core from './engine.js?core=096b';
+import {STAT_KEYS} from './config.js?v=096b';
+import {STATUS_DEFS,CLOTHES,ITEM_DEFS} from './data.js?v=096b';
 
 const ALLOWED_STATUSES=new Set([
   'hangover','pigeonHumiliated','suspicious','scared','angry',
-  'yebatorium','tipsy','skunk','tired'
+  'yebatorium','tipsy','skunk','tired','blessed','cowLicked'
 ]);
 const EARLY_CH3=new Set([
   'ch3_intro','ch3_obey','ch3_turn','ch3_call_pigeon','ch3_tell_off','ch3_creature',
@@ -132,7 +132,9 @@ export function executeAction(state,action){
     if(e?.type!=='statusAdded'&&e?.type!=='statusRemoved')return true;return ALLOWED_STATUSES.has(e.id);
   });
 
+  const refreshed=new Set([...(action?.effects||[]),...(action?.hiddenEffects||[])].filter(e=>e?.type==='statusAdd').map(e=>e.id));
   for(const id of beforeActive){
+    if(refreshed.has(id))continue;
     if(!s.activeStatuses.includes(id)||!Number.isFinite(Number(oldTimers[id])))continue;
     if(Number(STATUS_DEFS[id]?.durationMinutes)>0)s.statusTimers[id]=Number(oldTimers[id]);
   }

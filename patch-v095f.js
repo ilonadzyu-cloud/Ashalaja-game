@@ -1,5 +1,5 @@
 // v0.9.5f – full TРУПОСМЕРД reaction art pass.
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 const F095={
   normal:'./creature_normal_095f.webp',

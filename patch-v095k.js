@@ -1,9 +1,9 @@
 // v0.9.5k – chapter 1 logic cleanup, stable stage layout, Galina onion gift,
 // custom garlic art, wake mourner art, and the requested shop assortment.
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {ITEM_DEFS} from './data.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const A095K={
   garlic:{cool:'./garlic_cool_095k.webp',angry:'./garlic_angry_095k.webp'},

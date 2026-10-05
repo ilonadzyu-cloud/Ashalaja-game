@@ -1,4 +1,4 @@
-import {ITEM_DEFS} from './data.js?v=093';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const img=n=>`./${n}`;
 const hero=(name='ch2_hero_scared.png',position='hero')=>({role:'hero',src:img(name),position});
@@ -352,7 +352,7 @@ export const CHAPTER3_SCENES={
   ch3_branch_pending:{
     ...shed,id:'ch3_branch_pending',caption:'ця гілка ще росте',actors:[hero(),pigeon('pigeon_base.png')],
     text:`На цьому місці третя глава поки обривається.`,
-    notice:{title:'ПРОДОВЖЕННЯ ТРЕТЬОЇ ГЛАВИ БУДЕ...',body:'Наслідок збережено.'},
+    notice:{title:'ПРОДОВЖЕННЯ ТРЕТЬОЇ ГЛАВИ БУДЕ...',body:'Це ше може вилізти боком.'},
     end:true,choices:[]
   }
 };

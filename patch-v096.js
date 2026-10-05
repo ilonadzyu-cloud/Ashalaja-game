@@ -1,12 +1,12 @@
 // v0.9.6 – one large logic pass over chapters 1–3.
 // No new plot invented: fixes branch logic, knowledge order, consequence timing, menu structure and testing.
 
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {STATUS_DEFS,ITEM_DEFS} from './data.js?v=093';
-import {normalizeState,statModifiers,effectiveStat} from './engine.js?v=093';
-import {loadRun} from './storage.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {STATUS_DEFS,ITEM_DEFS} from './data.js?v=096b';
+import {normalizeState,statModifiers,effectiveStat} from './engine.js?v=096b';
+import {loadRun} from './storage.js?v=096b';
 
 const asArray=v=>Array.isArray(v)?v:[];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -152,7 +152,8 @@ function patchGarlicMemory096(){
 function patchTruposmerdKnowledge096(){
   const S=CHAPTER3_SCENES;if(!S.ch3_creature)return;
   S.ch3_creature.text=`З темряви повільно вилазить щось брудне й засмальцьоване.\n\nВоно стоїть біля сараю, вонюче до ригачок, потом і ще хуй зна чим.\n\n– Трупосмерд, блядь.`;
-  wrapChoices(S.ch3_creature,(xs,s)=>xs.map(c=>s.flags?.truposmerdNamed096?c:addHidden(c,{type:'flag',key:'truposmerdNamed096',value:true})));
+  const oldEnter=S.ch3_creature.onEnter;
+  S.ch3_creature.onEnter=s=>[...(typeof oldEnter==='function'?asArray(oldEnter(s)):asArray(oldEnter)),{type:'flag',key:'truposmerdNamed096',value:true}];
 }
 
 // 11. Knowledge flags are recorded after the player has actually read the discovery.
@@ -188,10 +189,9 @@ async function currentSaved096(){const id=currentRunId096();if(!id)return null;c
 function activateTab096(tab){document.querySelectorAll('#menuTabs [data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab))}
 
 function safeForShop096(s){
-  if(!s)return false;const scene=String(s.story?.sceneId||s.scene||''),loc=String(s.world?.location||'').toLocaleLowerCase('uk-UA');
-  if(s.world?.environment==='indoors'&&/хат/.test(loc))return true;
-  if(/^ch2_(intro|fence|real|crowd|legend|bench|table|supplies)/.test(scene))return true;
-  return false;
+  if(!s)return false;
+  const scene=String(s.story?.sceneId||s.scene||'');
+  return /^ch2_(intro|fence|real|crowd|legend|bench|benchask|table|supplies)/.test(scene);
 }
 function shopBlocked096(){activateTab096('shop');document.querySelector('#menuContent').innerHTML=`<div class="section-title"><h2>Крамничка</h2></div><div class="empty-state"><b>Зараз не до того.</b><br><br>Спочатку виберіться туди, де можна спокійно торгуватись або рубати дрова, а не чекати, поки вас хтось вʼєбе біля сараю.</div>`}
 function decorateShop096(){
@@ -207,10 +207,10 @@ function decorateStats096(){
     card.appendChild(meter);
   });
   const head=document.querySelector('#menuContent .section-title h2');if(head?.textContent==='Характеристики'){
-    const prog=document.querySelector('#menuContent .progression-card small');if(prog)prog.textContent='Сюжетні дії дають XP. 100 XP = новий рівень + 1 очко. Тільки ви вирішуєте, яку характеристику підняти.';
+    const prog=document.querySelector('#menuContent .progression-card small');if(prog)prog.textContent='За деякі дії й сутички ви отримуєте досвід. 100 XP = новий рівень і 1 очко прокачки. Куди його вкласти – вирішуєте самі.';
   }
 }
-function decorateNeeds096(){const h=document.querySelector('#menuContent .section-title h2');if(h?.textContent!=='Потреби')return;const c=document.querySelector('#menuContent .info-card');if(c)c.textContent='Здоровʼя, вода, ситість і бадьорість працюють напряму. Окремих станів «голодний», «сушняк» чи «розбита голова» нема. Нижче 35% бадьорості зʼявляється «ЗАЄБАВСЯ», знімається вище 55%. При 0% потреб здоровʼя вже починає зменшуватись.'}
+function decorateNeeds096(){const h=document.querySelector('#menuContent .section-title h2');if(h?.textContent!=='Потреби')return;const c=document.querySelector('#menuContent .info-card');if(c)c.textContent='Слідкуйте за водою, ситістю й бадьорістю. Чим нижчі показники – тим хуйовіше герою. Якщо якась потреба падає до нуля, здоровʼя починає зменшуватись.'}
 function decorateCompanions096(){
   const h=document.querySelector('#menuContent .section-title h2');if(h?.textContent!=='Компаньйони')return;
   document.querySelectorAll('.companion-profile').forEach(card=>{
@@ -240,7 +240,7 @@ async function renderMap096(){
   const currentHome=/хат|криниц/i.test(loc),currentWake=/помин|стол|двір/i.test(loc)&&!/сарай/i.test(loc),currentShed=/сарай/i.test(loc);
   const marker=(label,x,y,current=false,small=false)=>`<div class="map-marker known${small?' small':''}${current?' current':''}" style="left:${x}%;top:${y}%">${label}</div>`;const unknown=(x,y)=>`<div class="map-unknown" style="left:${x}%;top:${y}%"><span>?</span></div>`;
   const overlays=unlocked?[knownHome?marker('Хатина з криницею',27,70,currentHome):unknown(27,70),knownWake?marker('Двір з поминками',64,39,currentWake):unknown(64,39),knownShed?marker('Сарай',83,47,currentShed,true):unknown(83,47),unknown(21,18),unknown(45,13),unknown(84,20)].join(''):'';
-  root.innerHTML=`<div class="section-title"><h2>Карта</h2></div><div class="map-visual ${unlocked?'':'locked'}"><img src="./map_village.jpg?v=084" alt="Карта села">${unlocked?`<div class="map-overlays">${overlays}</div>`:`<div class="map-lock-copy"><b>ПОКИ ЗАКРИТО</b><span>Спочатку треба розібратись, де ви взагалі опинились.</span></div>`}</div>${unlocked?'<div class="map-help">Назва зʼявляється тільки після того, як ви реально відкрили місце. Все інше – ?</div>':''}`;
+  root.innerHTML=`<div class="section-title"><h2>Карта</h2></div><div class="map-visual ${unlocked?'':'locked'}"><img src="./map_village.jpg?v=084" alt="Карта села">${unlocked?`<div class="map-overlays">${overlays}</div>`:`<div class="map-lock-copy"><b>ПОКИ ЗАКРИТО</b><span>Спочатку треба розібратись, де ви взагалі опинились.</span></div>`}</div>${unlocked?'<div class="map-help">Підписані тільки місця, де ви вже були. Решта – хуй зна шо.</div>':''}`;
 }
 function addCharactersTab096(){const nav=document.querySelector('#menuTabs');if(!nav||nav.querySelector('[data-tab="characters"]'))return;const b=document.createElement('button');b.dataset.tab='characters';b.textContent='Персонажі';const rel=nav.querySelector('[data-tab="relations"]');nav.insertBefore(b,rel||null);b.onclick=renderCharacters096}
 function installMenuHooks096(){
@@ -277,9 +277,14 @@ function addCss096(){if(document.querySelector('#patch096css'))return;const st=d
 `;document.head.appendChild(st)}
 
 function fixOutdatedUiCopy096(){
-  const about=document.querySelector('#aboutOverlay .about-copy');if(about){about.innerHTML=about.innerHTML.replace('Голод, страх, холод, будуняра та інша хуйня реально впливають на характеристики й бій.','Будуняра, страх, злість, підозра, втома та інша хуйня реально впливають на характеристики й дії.').replace('За досвід росте загальний рівень героя','За досвід росте ваш загальний рівень')}
+  const about=document.querySelector('#aboutOverlay .about-copy');
+  if(about){
+    about.innerHTML=about.innerHTML
+      .replace('Голод, страх, холод, будуняра та інша хуйня реально впливають на характеристики й бій.','Будуняра, страх, злість, підозра, втома та інша хуйня можуть міняти характеристики й доступні дії.')
+      .replace('Деякі сюжетні бої закінчуються не смертю ворога, а окремою сценою.','Не кожну сутичку треба вигравати однаково.');
+  }
 }
-function stamp096(){document.querySelectorAll('.version,.howto-version,.game-name span').forEach(el=>el.textContent='v0.9.6')}
+function stamp096(){document.querySelectorAll('.version,.howto-version,.game-name span').forEach(el=>el.textContent='v0.9.6b')}
 
 function apply096(){
   patchEvpapiyMeeting096();patchWater096();patchLegend096();patchStateTriggers096();patchHealth096();patchGarlicMemory096();patchTruposmerdKnowledge096();patchKnowledgeTiming096();patchSunset096();patchMapUnlockNotice096();unifyProgression096();moveStaticConsequences096();patchHeroArt096();addCss096();installMenuHooks096();installTestHooks096();fixOutdatedUiCopy096();stamp096();

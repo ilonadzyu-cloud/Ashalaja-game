@@ -1,7 +1,7 @@
 // v0.9.5l – cleaner staging: max 2 visible characters; participating characters stay visible.
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 const A095L={
   handA:'./hero_pigeon_hand_a_095l.png',

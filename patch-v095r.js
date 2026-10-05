@@ -3,8 +3,8 @@
 // 2) The opening talking-pigeon beat uses the already-approved combined hand art.
 // 3) Hero PNG replacements are shipped as root assets (man_*.png), no story rewrite.
 
-import {CHAPTER1_SCENES} from './chapter1.js?v=093';
-import {ITEM_DEFS} from './data.js?v=093';
+import {CHAPTER1_SCENES} from './chapter1.js?v=096b';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const HAND_A095R='./hero_pigeon_hand_a_095l.png';
 const HAND_B095R='./hero_pigeon_hand_b_095l.png';

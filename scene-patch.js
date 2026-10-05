@@ -1,6 +1,6 @@
 // v0.9.4 – shorter story pages + new hero/creature reaction art.
-import {CHAPTER2_SCENES} from './chapter2.js?v=093';
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER2_SCENES} from './chapter2.js?v=096b';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 const H={
   shrug:'./hero_shrug_096.png',

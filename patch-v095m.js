@@ -1,6 +1,6 @@
 // v0.9.5m – first meeting with Baba Galya's cat in chapter 3.
 // Kept deliberately small: one intro node, three reactions, all returning to the existing story.
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 const CAT095M={
   base:'./cat_base_095m.png',

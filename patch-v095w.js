@@ -1,6 +1,6 @@
 // v0.9.5w – first TРУПОСМЕРД encounter is a survival encounter, not a fake full fight.
 
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
 
 const asArray=x=>Array.isArray(x)?x:[];
 const mergeEffects=(a,b)=>[...asArray(a),...asArray(b)];

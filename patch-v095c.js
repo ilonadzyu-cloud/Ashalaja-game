@@ -1,5 +1,5 @@
-import {CHAPTER3_SCENES} from './chapter3.js?v=093';
-import {ITEM_DEFS} from './data.js?v=093';
+import {CHAPTER3_SCENES} from './chapter3.js?v=096b';
+import {ITEM_DEFS} from './data.js?v=096b';
 
 const C095C={
   creature:{normal:'./creature_normal_095c.webp',battle:'./creature_battle_095c.webp'},

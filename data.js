@@ -17,7 +17,7 @@ export const STATUS_DEFS={
   blessed:{
     name:'СВЯТА ВОДИЧКА ПРАЦЮЄ',portrait:'./portrait_base.png',
     blurb:'Баба Галя явно шось знала.',mods:{},negativeModShield:1,durationMinutes:60,
-    extraEffects:['Кожен негативний модифікатор від активних станів слабшає на 1.'],
+    extraEffects:['Мінуси до характеристик від хуйових станів стають на 1 слабші.'],
     remove:'ефект сам минає через 60 ігрових хвилин.'
   },
   scared:{
@@ -70,7 +70,7 @@ export const ITEM_DEFS={
   onion_angry:{name:'Зла цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Вгризається й продовжує кусати.'},
   onion_smelly:{name:'Вонюча цибуля',icon:'🧅',category:'Якась хуйня',stack:5,description:'Від неї можна й вирубитись.'},
   old_key:{name:'Старий ключ',icon:'🗝️',category:'Якась хуйня',stack:1,description:'Старий ключ. Від чого – поки незрозуміло.'},
-  holy_water:{name:'Свята вода',icon:'✝️',category:'Якась хуйня',stack:3,description:'На 60 хвилин послаблює кожен негативний модифікатор від станів на 1.',useEffects:[{type:'statusAdd',id:'blessed'}]},
+  holy_water:{name:'Свята вода',icon:'✝️',category:'Якась хуйня',stack:3,description:'На годину трохи послаблює мінуси від хуйових станів.',useEffects:[{type:'statusAdd',id:'blessed'}]},
   potion_unknown:{name:'??? Зілля',icon:'🧪',category:'Якась хуйня',stack:3,description:'Ефект: невідомий.',unknown:true}
 };
 

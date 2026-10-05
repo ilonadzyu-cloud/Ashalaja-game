@@ -1,13 +1,13 @@
 // v0.9.4 – visual shell + scene/art patch + battle reactions.
-import {installBattleTest} from './battle.js?v=093';
-import {applyScenePatch094} from './scene-patch.js?v=094';
+import {installBattleTest} from './battle.js?v=096b';
+import {applyScenePatch094} from './scene-patch.js?v=096b';
 
 applyScenePatch094();
 
 const groups085 = {
   hero: {label:'Герой',tabs:[['needs','Потреби'],['sleep','Сон'],['states','Стани'],['stats','Характеристики']]},
   things: {label:'Речі',tabs:[['inventory','Інвентар'],['clothes','Шмотки']]},
-  people: {label:'Персонажі',tabs:[['companions','Компаньйони'],['relations','Стосунки']]},
+  people: {label:'Персонажі',tabs:[['characters','Персонажі'],['companions','Компаньйони'],['relations','Стосунки']]},
   world: {label:'Світ',tabs:[['map','Карта'],['shop','Крамничка']]}
 };
 
@@ -83,7 +83,7 @@ function stampVersion094(){document.querySelectorAll('.version,.howto-version,.g
 
 function addEquipmentStoryNote094(){
   const root=q085('#menuContent');if(!root||activeOriginalTab085()!=='clothes'||root.querySelector('.equipment-story-note'))return;
-  const note=document.createElement('div');note.className='info-card equipment-story-note';note.textContent='Екіпіровка впливає на характеристики. Сюжетний вигляд персонажа не змінює.';
+  const note=document.createElement('div');note.className='info-card equipment-story-note';note.textContent='Шмотки можуть давати бонуси до характеристик.';
   const anchor=root.querySelector('.clothes-total')||root.querySelector('.section-title');
   if(anchor)anchor.insertAdjacentElement('afterend',note);else root.prepend(note);
 }
@@ -137,6 +137,6 @@ function installBattleUiPatch094(){
 }
 
 function boot085(){
-  document.body.classList.add('ui-v085');stampVersion094();installPatchCss094();buildStart085();buildGroupedMenu085();installEquipmentNoteObserver094();installBattleTest();installBattleUiPatch094();
+  document.body.classList.add('ui-v085');stampVersion094();installPatchCss094();buildStart085();buildGroupedMenu085();installEquipmentNoteObserver094();installBattleUiPatch094();
 }
 boot085();
